@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+# env & secrets
+.env
+*.env
+!.env.example
+# build output
+dist/
+build/
+# prisma
+server/prisma/*.db
+# logs & OS
+*.log
+.DS_Store
+# IDE
+.idea/
+*.iml
+.vscode/
+# course docs (local only)
+Lab1_*.pdf
+Lab1_Starter_Scaffold.zip
+Lab1_Plan_Beginner.md
+CLAUDE_CODE_KICKOFF.md
