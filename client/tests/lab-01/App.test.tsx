@@ -12,8 +12,19 @@ describe("App", () => {
     expect(screen.getByText(/TokTickIT/i)).toBeInTheDocument();
   });
 
-  it("shows Online and the seeded categories on success", async () => {
-    vi.spyOn(api, "checkSystem").mockResolvedValue({
+  it("shows the loading state, then Online and the seeded categories", async () => {
+    // Hold the API promise open so the loading state is observable (UI-02).
+    let resolve!: (value: api.SystemStatus) => void;
+    const pending = new Promise<api.SystemStatus>((r) => (resolve = r));
+    vi.spyOn(api, "checkSystem").mockReturnValue(pending);
+
+    render(<App />);
+    await userEvent.click(screen.getByRole("button", { name: /check system/i }));
+
+    expect(screen.getByText(/⏳ loading/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /loading/i })).toBeDisabled();
+
+    resolve({
       online: true,
       categories: [
         { id: 1, name: "Account and Access" },
@@ -23,10 +34,8 @@ describe("App", () => {
       ],
     });
 
-    render(<App />);
-    await userEvent.click(screen.getByRole("button", { name: /check system/i }));
-
     expect(await screen.findByText(/Online/i)).toBeInTheDocument();
+    expect(screen.queryByText(/⏳/)).not.toBeInTheDocument();
     expect(screen.getByText("Account and Access")).toBeInTheDocument();
     expect(screen.getByText("Network")).toBeInTheDocument();
   });
