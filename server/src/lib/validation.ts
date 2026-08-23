@@ -100,3 +100,10 @@ export function validateCreateTicket(body: unknown): ValidationResult {
     },
   };
 }
+
+// BR-37 — an attachment may only be removed with a stated reason.
+export function validateRemovalReason(raw: unknown): { errors: FieldError[]; value?: string } {
+  const errors: FieldError[] = [];
+  const value = validateText(raw, "reason", "Reason", 3, 200, errors);
+  return errors.length > 0 ? { errors } : { errors, value };
+}

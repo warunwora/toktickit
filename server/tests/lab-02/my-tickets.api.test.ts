@@ -56,24 +56,32 @@ function list(query: string, requesterId: number | null = ownerId) {
   return req;
 }
 
-beforeAll(async () => {
-  const requesters = await prisma.requesterUser.findMany({
-    where: { isActive: true },
-    orderBy: { id: "asc" },
-    take: 3,
+// Dedicated test requesters: the suite needs exact counts, so it must never
+// depend on — or delete — the tickets a developer created by hand.
+async function testRequester(slug: string) {
+  const email = `lab2-${slug}@tests.toktickit.local`;
+  const requester = await prisma.requesterUser.upsert({
+    where: { email },
+    update: {},
+    create: { name: `Lab 2 test ${slug}`, email, department: "Automated tests", isActive: true },
+    select: { id: true },
   });
+  return requester.id;
+}
+
+beforeAll(async () => {
   const categories = await prisma.category.findMany({ where: { isActive: true }, orderBy: { id: "asc" }, take: 2 });
   const relatedSystem = await prisma.relatedSystem.findFirst({ where: { isActive: true }, orderBy: { id: "asc" } });
 
-  ownerId = requesters[0].id;
-  otherId = requesters[1].id;
-  emptyRequesterId = requesters[2].id;
+  ownerId = await testRequester("list-owner");
+  otherId = await testRequester("list-other");
+  emptyRequesterId = await testRequester("list-empty");
   categoryA = categories[0].id;
   categoryB = categories[1].id;
   relatedSystemId = relatedSystem!.id;
 
-  // The owner keeps a clean slate so counts in this suite are exact.
-  await prisma.ticket.deleteMany({ where: { requesterId: { in: [ownerId, emptyRequesterId] } } });
+  // Only this suite's own leftovers are cleared.
+  await prisma.ticket.deleteMany({ where: { requesterId: { in: [ownerId, otherId, emptyRequesterId] } } });
 
   const base = new Date("2026-03-01T00:00:00.000Z");
   for (let i = 0; i < 12; i++) {
@@ -91,7 +99,10 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await prisma.ticket.deleteMany({ where: { id: { in: createdIds } } });
+  // Leave the database exactly as the suite found it: no test tickets and no
+  // test requesters lingering in the Development Requester selector.
+  await prisma.ticket.deleteMany({ where: { requesterId: { in: [ownerId, otherId, emptyRequesterId] } } });
+  await prisma.requesterUser.deleteMany({ where: { id: { in: [ownerId, otherId, emptyRequesterId] } } });
 });
 
 describe("GET /api/tickets", () => {

@@ -64,3 +64,27 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
+
+/** Downloads need the identity header too, so a plain <a href> will not do. */
+export async function apiFetchBlob(path: string): Promise<{ blob: Blob; filename: string | null }> {
+  const headers = new Headers();
+  const requesterId = getStoredRequesterId();
+  if (requesterId !== null) headers.set("X-Requester-Id", String(requesterId));
+
+  const response = await fetch(`${API_URL}${path}`, { headers });
+
+  if (!response.ok) {
+    let message = "Unable to download this file.";
+    try {
+      const body = await response.json();
+      if (typeof body?.error === "string") message = body.error;
+    } catch {
+      // Keep the generic message.
+    }
+    throw new ApiError(response.status, message);
+  }
+
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const match = /filename="([^"]+)"/.exec(disposition);
+  return { blob: await response.blob(), filename: match ? match[1] : null };
+}

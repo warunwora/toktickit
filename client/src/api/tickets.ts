@@ -85,3 +85,7 @@ export function listTickets(params: TicketListParams): Promise<TicketListRespons
     withRequester: true,
   });
 }
+
+export function getTicket(id: number): Promise<Ticket> {
+  return apiFetch<Ticket>(`/api/tickets/${id}`, { withRequester: true });
+}

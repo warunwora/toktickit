@@ -500,3 +500,56 @@ a:focus-visible {
     white-space: normal;
   }
 }
+
+/* ---------- attachments ---------- */
+
+.zg-attachment-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--zg-space-4);
+}
+
+.zg-attachment {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--zg-space-3);
+  padding: var(--zg-space-3) 0;
+  border-bottom: 1px solid var(--zg-border);
+}
+
+.zg-attachment:last-child {
+  border-bottom: none;
+}
+
+.zg-attachment-name {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.zg-attachment-removed .zg-attachment-name {
+  color: var(--zg-text-muted);
+  text-decoration: line-through;
+}
+
+/* ---------- modal ---------- */
+
+.zg-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(27, 43, 34, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--zg-space-4);
+  z-index: 1000;
+}
+
+.zg-modal-panel {
+  background: var(--zg-surface);
+  border-radius: var(--zg-radius);
+  padding: var(--zg-space-6);
+  width: 100%;
+  max-width: 480px;
+}

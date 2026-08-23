@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import * as reference from "../../src/api/reference.js";
 import * as tickets from "../../src/api/tickets.js";
+import * as attachments from "../../src/api/attachments.js";
 import { ApiError, REQUESTER_STORAGE_KEY } from "../../src/api/client.js";
 import { RequesterProvider } from "../../src/context/RequesterContext.js";
 import CreateTicket from "../../src/pages/CreateTicket.js";
@@ -238,5 +239,74 @@ describe("Create Ticket", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/unable to load categories/i);
     expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+  });
+
+  // UI-09 / AC-14, BR-31, BR-32
+  it("rejects an invalid attachment by name and keeps the valid one selected", async () => {
+    renderCreateTicket();
+
+    const picker = await screen.findByLabelText(/^Attachments/);
+    const validFile = new File([new Uint8Array(1024)], "evidence.png", { type: "image/png" });
+    const oversized = new File([new Uint8Array(8)], "huge.png", { type: "image/png" });
+    Object.defineProperty(oversized, "size", { value: 6 * 1024 * 1024 });
+
+    fireEvent.change(picker, {
+      target: {
+        files: [
+          validFile,
+          oversized,
+          new File(["MZ"], "setup.exe", { type: "application/x-msdownload" }),
+        ],
+      },
+    });
+
+    expect(await screen.findByText(/huge\.png: each file must be 5 MB or smaller/i)).toBeInTheDocument();
+    expect(screen.getByText(/setup\.exe: only JPG, PNG, WEBP and PDF/i)).toBeInTheDocument();
+    expect(screen.getByText("evidence.png")).toBeInTheDocument();
+  });
+
+  // BR-41 — an attachment failure never rolls back a saved ticket
+  it("keeps the created ticket and reports the file when an upload fails", async () => {
+    vi.spyOn(tickets, "createTicket").mockResolvedValue(createdTicket());
+    vi.spyOn(attachments, "uploadAttachment").mockRejectedValue(new Error("upload down"));
+
+    renderCreateTicket();
+    await fillValidForm();
+
+    fireEvent.change(screen.getByLabelText(/^Attachments/), {
+      target: { files: [new File([new Uint8Array(16)], "evidence.png", { type: "image/png" })] },
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /submit ticket/i }));
+
+    expect(await screen.findByText("TKT-2026-000042")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(/some attachments did not upload/i);
+    expect(screen.getByText(/evidence\.png/)).toBeInTheDocument();
+  });
+
+  it("uploads each selected attachment after the ticket is created", async () => {
+    vi.spyOn(tickets, "createTicket").mockResolvedValue(createdTicket());
+    const uploadSpy = vi.spyOn(attachments, "uploadAttachment").mockResolvedValue({
+      id: 5,
+      ticketId: 42,
+      originalFilename: "evidence.png",
+      mimeType: "image/png",
+      sizeBytes: 16,
+      uploadedAt: "2026-08-12T04:20:10.004Z",
+      uploadedBy: { id: 1, name: "Napat Srisai" },
+      state: "ACTIVE",
+    });
+
+    renderCreateTicket();
+    await fillValidForm();
+
+    fireEvent.change(screen.getByLabelText(/^Attachments/), {
+      target: { files: [new File([new Uint8Array(16)], "evidence.png", { type: "image/png" })] },
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /submit ticket/i }));
+
+    await waitFor(() => expect(uploadSpy).toHaveBeenCalledWith(42, expect.any(File)));
+    expect(await screen.findByText("TKT-2026-000042")).toBeInTheDocument();
   });
 });
