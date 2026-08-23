@@ -28,3 +28,8 @@ server/uploads/
 # course docs (local only)
 Lab_0*.pdf
 Lab2_*.pdf
+
+# playwright
+playwright-report/
+test-results/
+blob-report/

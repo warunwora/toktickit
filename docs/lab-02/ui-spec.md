@@ -213,18 +213,29 @@ Completed against real screenshots at three viewports, not from memory (AC-35).
 
 | # | Check | Desktop | Tablet | Mobile |
 |---|---|---|---|---|
-| V-01 | Zen Green tokens used; no stray hex colours | ☐ | ☐ | ☐ |
-| V-02 | Read-only fields visibly distinct from editable fields | ☐ | ☐ | ☐ |
-| V-03 | Required asterisks present and validation messages sit under their own field | ☐ | ☐ | ☐ |
-| V-04 | Button hierarchy correct; busy and disabled states visible | ☐ | ☐ | ☐ |
-| V-05 | No clipped labels or truncated attachment names | ☐ | ☐ | ☐ |
-| V-06 | No overlapping messages or controls | ☐ | ☐ | ☐ |
-| V-07 | No unintended horizontal page scrolling | ☐ | ☐ | ☐ |
-| V-08 | Badges consistent and readable without colour | ☐ | ☐ | ☐ |
-| V-09 | Filters, pagination, and attachment controls usable at this size | ☐ | ☐ | ☐ |
-| V-10 | Loading, empty, no-results, and failure states all reachable and clear | ☐ | ☐ | ☐ |
-| V-11 | Focus ring visible on every interactive control | ☐ | ☐ | ☐ |
-| V-12 | Active navigation item unmistakable | ☐ | ☐ | ☐ |
+| V-01 | Zen Green tokens used; no stray hex colours | ✅ | ✅ | ✅ |
+| V-02 | Read-only fields visibly distinct from editable fields | ✅ | ✅ | ✅ |
+| V-03 | Required asterisks present and validation messages sit under their own field | ✅ | ✅ | ✅ |
+| V-04 | Button hierarchy correct; busy and disabled states visible | ✅ | ✅ | ✅ |
+| V-05 | No clipped labels or truncated attachment names | ✅ | ✅ | ✅ |
+| V-06 | No overlapping messages or controls | ✅ | ✅ | ✅ |
+| V-07 | No unintended horizontal page scrolling | ✅ | ✅ | ✅ |
+| V-08 | Badges consistent and readable without colour | ✅ | ✅ | ✅ |
+| V-09 | Filters, pagination, and attachment controls usable at this size | ✅ | ✅ | ✅ |
+| V-10 | Loading, empty, no-results, and failure states all reachable and clear | ✅ | ✅ | ✅ |
+| V-11 | Focus ring visible on every interactive control | ✅ | ✅ | ✅ |
+| V-12 | Active navigation item unmistakable | ✅ | ✅ | ✅ |
+
+Completed in Issue 7 against the screenshots listed in §12, captured at 1280×800, 820×1180, and
+390×844. V-07 is additionally asserted automatically in `e2e/lab-02/responsive.spec.ts`, which also
+fails if any element inside `main` overflows its own container.
+
+**Defects this inspection found and fixed**
+
+| Finding | Fix |
+|---|---|
+| The My Tickets table was wider than its card at 1280 px and pushed the whole page into horizontal scrolling at 820 px. | The card now clips and an inner `.zg-table-wrap` scrolls, so a wide table never makes the page scroll sideways; the summary column also truncates earlier on tablet. |
+| The mobile menu toggle stayed visible at desktop width, because `.zg-btn`'s `display` won on specificity. | The rule became `.zg-header .zg-menu-toggle`, so the toggle is hidden from 992 px up. |
 
 ## 12. Screenshot paths
 
