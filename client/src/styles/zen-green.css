@@ -391,8 +391,20 @@ a:focus-visible {
 
 /* ---------- ticket table ---------- */
 
+/* The card clips, the wrapper scrolls: a wide table never makes the page
+   scroll horizontally (ui-spec §9). */
+.zg-table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.zg-table-wrap {
+  overflow-x: auto;
+}
+
 .zg-table {
   width: 100%;
+  min-width: 100%;
   border-collapse: collapse;
   background: var(--zg-surface);
   border-radius: var(--zg-radius);
@@ -429,7 +441,7 @@ a:focus-visible {
 
 .zg-truncate {
   display: inline-block;
-  max-width: 32ch;
+  max-width: 28ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -449,6 +461,10 @@ a:focus-visible {
 @media (min-width: 768px) and (max-width: 991px) {
   .zg-col-system {
     display: none;
+  }
+
+  .zg-truncate {
+    max-width: 22ch;
   }
 }
 

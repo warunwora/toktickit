@@ -313,8 +313,9 @@ export default function MyTickets() {
 
       {state === "ready" && items.length > 0 && (
         <>
-          <div className="zg-card p-0">
-            <table className="zg-table">
+          <div className="zg-card zg-table-card">
+            <div className="zg-table-wrap">
+              <table className="zg-table">
               <caption className="visually-hidden">Tickets belonging to the selected Development Requester</caption>
               <thead>
                 <tr>
@@ -352,7 +353,8 @@ export default function MyTickets() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
 
           <nav className="zg-pagination" aria-label="Ticket list pages">
