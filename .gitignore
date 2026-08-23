@@ -21,3 +21,10 @@ Lab1_*.pdf
 Lab1_Starter_Scaffold.zip
 Lab1_Plan_Beginner.md
 CLAUDE_CODE_KICKOFF.md
+
+# uploaded attachments (local storage, never committed)
+server/uploads/
+
+# course docs (local only)
+Lab_0*.pdf
+Lab2_*.pdf
