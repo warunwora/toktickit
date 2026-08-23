@@ -5,6 +5,7 @@ import AppShell from "./components/AppShell.js";
 import RequesterSelection from "./pages/RequesterSelection.js";
 import MyTickets from "./pages/MyTickets.js";
 import CreateTicket from "./pages/CreateTicket.js";
+import RequesterTicketDetail from "./pages/RequesterTicketDetail.js";
 import App from "./App.js";
 
 export function AppRoutes() {
@@ -24,6 +25,7 @@ export function AppRoutes() {
       >
         <Route path="/tickets" element={<MyTickets />} />
         <Route path="/tickets/new" element={<CreateTicket />} />
+        <Route path="/tickets/:id" element={<RequesterTicketDetail />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/tickets" replace />} />

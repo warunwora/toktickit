@@ -5,6 +5,7 @@ import { resolveRequester, RequesterError } from "../lib/requester.js";
 import { validateCreateTicket } from "../lib/validation.js";
 import { formatTicketNumber } from "../lib/ticket-number.js";
 import { parseTicketListQuery } from "../lib/query.js";
+import { serializeAttachment } from "./attachments.js";
 
 // Ticket routes — contract: docs/lab-02/api-spec.md §3.
 
@@ -198,5 +199,57 @@ ticketsRouter.get("/api/tickets", async (req: Request, res: Response) => {
     });
   } catch {
     res.status(500).json({ error: "Unable to load tickets" });
+  }
+});
+
+ticketsRouter.get("/api/tickets/:id", async (req: Request, res: Response) => {
+  const ticketId = Number(req.params.id);
+  if (!Number.isInteger(ticketId)) {
+    res.status(400).json({ error: "Invalid ticket id" });
+    return;
+  }
+
+  let requesterId: number;
+  try {
+    requesterId = (await resolveRequester(req)).id;
+  } catch (error) {
+    if (handleRequesterError(error, res)) return;
+    res.status(500).json({ error: "Unable to load the ticket" });
+    return;
+  }
+
+  try {
+    // BR-13 — another requester's ticket answers exactly like a missing one.
+    const ticket = await getPrisma().ticket.findFirst({
+      where: { id: ticketId, requesterId },
+      select: {
+        ...ticketDetailSelect,
+        attachments: {
+          orderBy: { id: "asc" },
+          select: {
+            id: true,
+            ticketId: true,
+            originalFilename: true,
+            mimeType: true,
+            sizeBytes: true,
+            uploadedAt: true,
+            removedAt: true,
+            removalReason: true,
+            uploadedBy: { select: { id: true, name: true } },
+            removedBy: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+
+    const { attachments, ...rest } = ticket;
+    res.status(200).json({ ...rest, attachments: attachments.map(serializeAttachment) });
+  } catch {
+    res.status(500).json({ error: "Unable to load the ticket" });
   }
 });

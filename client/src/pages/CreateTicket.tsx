@@ -3,6 +3,14 @@ import { Link } from "react-router-dom";
 import { ApiError } from "../api/client.js";
 import { getCategories, getRelatedSystems, ReferenceItem } from "../api/reference.js";
 import { createTicket, Priority, Ticket } from "../api/tickets.js";
+import {
+  ALLOWED_ACCEPT,
+  ATTACHMENT_RULES_TEXT,
+  MAX_ACTIVE_ATTACHMENTS,
+  checkFile,
+  formatFileSize,
+  uploadAttachment,
+} from "../api/attachments.js";
 import { useRequester } from "../context/RequesterContext.js";
 
 // Create Ticket — docs/lab-02/ui-spec.md §7.2, api-spec.md §3.1.
@@ -70,6 +78,10 @@ export default function CreateTicket() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [created, setCreated] = useState<Ticket | null>(null);
 
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileErrors, setFileErrors] = useState<string[]>([]);
+  const [uploadFailures, setUploadFailures] = useState<string[]>([]);
+
   useEffect(() => {
     let cancelled = false;
     setReferenceState("loading");
@@ -100,6 +112,36 @@ export default function CreateTicket() {
     });
   }
 
+  function handleFilesSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (selected.length === 0) return;
+
+    const accepted: File[] = [];
+    const problems: string[] = [];
+
+    for (const file of selected) {
+      const problem = checkFile(file);
+      if (problem) {
+        problems.push(problem);
+        continue;
+      }
+      if (files.length + accepted.length >= MAX_ACTIVE_ATTACHMENTS) {
+        problems.push(`${file.name}: a ticket can have at most ${MAX_ACTIVE_ATTACHMENTS} attachments`);
+        continue;
+      }
+      accepted.push(file);
+    }
+
+    // AC-14 — invalid files are reported by name; valid selections stay.
+    setFiles((current) => [...current, ...accepted]);
+    setFileErrors(problems);
+  }
+
+  function removeSelectedFile(index: number) {
+    setFiles((current) => current.filter((_, i) => i !== index));
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setSubmitError(null);
@@ -119,6 +161,20 @@ export default function CreateTicket() {
         summary: values.summary.trim(),
         description: values.description.trim(),
       });
+      // BR-41 — the ticket is never rolled back because an upload failed;
+      // each failure is reported per file so it can be retried from the ticket.
+      const failures: string[] = [];
+      for (const file of files) {
+        try {
+          await uploadAttachment(ticket.id, file);
+        } catch (error) {
+          failures.push(
+            `${file.name}: ${error instanceof ApiError ? error.message : "upload failed, you can retry it on the ticket"}`
+          );
+        }
+      }
+
+      setUploadFailures(failures);
       setCreated(ticket);
       setErrors({});
     } catch (error) {
@@ -141,6 +197,9 @@ export default function CreateTicket() {
     setValues(EMPTY_FORM);
     setErrors({});
     setSubmitError(null);
+    setFiles([]);
+    setFileErrors([]);
+    setUploadFailures([]);
   }
 
   function messageFor(field: keyof FormValues) {
@@ -175,6 +234,17 @@ export default function CreateTicket() {
               Ticket Number: <strong>{created.ticketNumber}</strong>
             </p>
           </div>
+
+          {uploadFailures.length > 0 && (
+            <div className="zg-callout zg-callout-warning" role="alert">
+              <p className="mb-1">The ticket was saved, but some attachments did not upload:</p>
+              <ul className="mb-0">
+                {uploadFailures.map((failure) => (
+                  <li key={failure}>{failure}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="d-flex flex-wrap gap-2">
             <Link className="zg-btn zg-btn-primary" to={`/tickets/${created.id}`}>
               View Ticket
@@ -371,8 +441,46 @@ export default function CreateTicket() {
           </span>
         </div>
 
-        <div className="zg-callout zg-callout-info" role="note">
-          Attachments can be added on the ticket after it is created.
+        <div className="zg-field">
+          <label className="zg-label" htmlFor="attachments">
+            Attachments
+          </label>
+          <input
+            id="attachments"
+            className="zg-input"
+            type="file"
+            multiple
+            accept={ALLOWED_ACCEPT}
+            onChange={handleFilesSelected}
+          />
+          <span className="zg-muted">{ATTACHMENT_RULES_TEXT}</span>
+
+          {fileErrors.map((message) => (
+            <span key={message} className="zg-message zg-message-error">
+              {message}
+            </span>
+          ))}
+
+          {files.length > 0 && (
+            <ul className="zg-attachment-list mt-2">
+              {files.map((file, index) => (
+                <li key={`${file.name}-${index}`} className="zg-attachment">
+                  <span>
+                    <span className="zg-attachment-name">{file.name}</span>{" "}
+                    <span className="zg-muted">{formatFileSize(file.size)}</span>
+                  </span>
+                  <button
+                    type="button"
+                    className="zg-btn zg-btn-tertiary"
+                    onClick={() => removeSelectedFile(index)}
+                    aria-label={`Remove ${file.name} from the selection`}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="d-flex flex-wrap gap-2">
