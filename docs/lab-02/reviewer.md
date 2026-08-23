@@ -22,7 +22,8 @@ Branch flow: `feature/*` → `lab2-staging` → `main`. No commit was made direc
 | [#26](https://github.com/warunwora/toktickit/pull/26) | [#18](https://github.com/warunwora/toktickit/issues/18) Ticket Detail and attachment lifecycle | `feature/lab2-6-ticket-detail` | `lab2-staging` | Approved |
 | [#27](https://github.com/warunwora/toktickit/pull/27) | [#19](https://github.com/warunwora/toktickit/issues/19) E2E, responsive checks, screenshots | `feature/lab2-7-e2e-visual` | `lab2-staging` | Reviewed and merged |
 | [#28](https://github.com/warunwora/toktickit/pull/28) | [#20](https://github.com/warunwora/toktickit/issues/20) Final documentation | `feature/lab2-8-docs-release` | `lab2-staging` | Approved |
-| [#29](https://github.com/warunwora/toktickit/pull/29) | — Release | `lab2-staging` | `main` | Approved |
+| [#29](https://github.com/warunwora/toktickit/pull/29) | [#20](https://github.com/warunwora/toktickit/issues/20) Documentation set completed | `feature/lab2-9-ai-use-polish` | `lab2-staging` | Approved |
+| [#30](https://github.com/warunwora/toktickit/pull/30) | — Lab 2 release | `lab2-staging` | `main` | Approved |
 
 ### Comments I received, and how I responded
 
