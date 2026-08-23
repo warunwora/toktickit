@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import * as reference from "../../src/api/reference.js";
@@ -41,8 +41,9 @@ describe("application shell", () => {
     renderApp("/tickets");
 
     expect(await screen.findByText("Napat Srisai")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /my tickets/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /create ticket/i })).toBeInTheDocument();
+    const nav = screen.getByRole("navigation", { name: /main/i });
+    expect(within(nav).getByRole("link", { name: /my tickets/i })).toBeInTheDocument();
+    expect(within(nav).getByRole("link", { name: /create ticket/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /change requester/i })).toBeInTheDocument();
   });
 
@@ -52,11 +53,12 @@ describe("application shell", () => {
 
     renderApp("/tickets/new");
 
-    const createLink = await screen.findByRole("link", { name: /create ticket/i });
+    const nav = await screen.findByRole("navigation", { name: /main/i });
+    const createLink = within(nav).getByRole("link", { name: /create ticket/i });
     expect(createLink).toHaveAttribute("aria-current", "page");
     expect(createLink.className).toContain("zg-nav-link-active");
 
-    const listLink = screen.getByRole("link", { name: /my tickets/i });
+    const listLink = within(nav).getByRole("link", { name: /my tickets/i });
     expect(listLink).not.toHaveAttribute("aria-current");
   });
 
@@ -70,7 +72,7 @@ describe("application shell", () => {
 
     expect(await screen.findByText(/this is not a login screen/i)).toBeInTheDocument();
     expect(window.localStorage.getItem(REQUESTER_STORAGE_KEY)).toBeNull();
-    expect(screen.queryByRole("link", { name: /my tickets/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: /main/i })).not.toBeInTheDocument();
   });
 
   // UI-03 / AC-04 — the new identity is the one the shell reports
