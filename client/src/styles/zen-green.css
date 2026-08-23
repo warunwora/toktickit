@@ -370,3 +370,133 @@ a:focus-visible {
   color: var(--zg-warning);
   border-color: var(--zg-warning);
 }
+
+/* ---------- toolbar ---------- */
+
+.zg-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--zg-space-3);
+  align-items: end;
+}
+
+.zg-toolbar .zg-field {
+  margin-bottom: 0;
+}
+
+.zg-toolbar-actions {
+  display: flex;
+  align-items: flex-end;
+}
+
+/* ---------- ticket table ---------- */
+
+.zg-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--zg-surface);
+  border-radius: var(--zg-radius);
+  overflow: hidden;
+}
+
+.zg-table th,
+.zg-table td {
+  padding: var(--zg-space-3) var(--zg-space-4);
+  text-align: left;
+  border-bottom: 1px solid var(--zg-border);
+  vertical-align: middle;
+}
+
+.zg-table th {
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--zg-pale);
+  color: var(--zg-text);
+}
+
+.zg-table tbody tr:hover {
+  background: var(--zg-pale);
+}
+
+.zg-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.zg-table td[data-label="Ticket Number"],
+.zg-table td[data-label="Last Updated"] {
+  white-space: nowrap;
+}
+
+.zg-truncate {
+  display: inline-block;
+  max-width: 32ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.zg-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--zg-space-3);
+  margin-top: var(--zg-space-4);
+}
+
+/* Tablet: Related System gives its width to Summary (ui-spec §9). */
+@media (min-width: 768px) and (max-width: 991px) {
+  .zg-col-system {
+    display: none;
+  }
+}
+
+/* Mobile: the same rows become cards — one DOM, no duplicated content. */
+@media (max-width: 767px) {
+  .zg-table thead {
+    display: none;
+  }
+
+  .zg-table,
+  .zg-table tbody,
+  .zg-table tr,
+  .zg-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .zg-table tr {
+    border: 1px solid var(--zg-border);
+    border-radius: var(--zg-radius);
+    margin-bottom: var(--zg-space-3);
+    padding: var(--zg-space-2) var(--zg-space-3);
+    background: var(--zg-surface);
+  }
+
+  .zg-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--zg-space-3);
+    border-bottom: none;
+    padding: var(--zg-space-2) 0;
+  }
+
+  .zg-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--zg-text-muted);
+    flex: 0 0 auto;
+  }
+
+  .zg-truncate {
+    max-width: 100%;
+    white-space: normal;
+    text-align: right;
+  }
+
+  .zg-table td[data-label="Ticket Number"],
+  .zg-table td[data-label="Last Updated"] {
+    white-space: normal;
+  }
+}

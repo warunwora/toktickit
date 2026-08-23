@@ -4,6 +4,7 @@ import { getPrisma } from "../prisma.js";
 import { resolveRequester, RequesterError } from "../lib/requester.js";
 import { validateCreateTicket } from "../lib/validation.js";
 import { formatTicketNumber } from "../lib/ticket-number.js";
+import { parseTicketListQuery } from "../lib/query.js";
 
 // Ticket routes — contract: docs/lab-02/api-spec.md §3.
 
@@ -121,5 +122,81 @@ ticketsRouter.post("/api/tickets", async (req: Request, res: Response) => {
     res.status(201).json({ ...ticket, attachments: [] });
   } catch {
     res.status(500).json({ error: "Unable to create the ticket" });
+  }
+});
+
+ticketsRouter.get("/api/tickets", async (req: Request, res: Response) => {
+  const prisma = getPrisma();
+
+  let requesterId: number;
+  try {
+    requesterId = (await resolveRequester(req)).id;
+  } catch (error) {
+    if (handleRequesterError(error, res)) return;
+    res.status(500).json({ error: "Unable to load tickets" });
+    return;
+  }
+
+  const { errors, value: query } = parseTicketListQuery(req.query as Record<string, unknown>);
+  if (!query) {
+    res.status(400).json({ error: "Invalid query parameters", fields: errors });
+    return;
+  }
+
+  // BR-14 — ownership is applied server-side; no query parameter can widen it.
+  const where = {
+    requesterId,
+    ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+    ...(query.relatedSystemId ? { relatedSystemId: query.relatedSystemId } : {}),
+    ...(query.requestedPriority ? { requestedPriority: query.requestedPriority } : {}),
+    ...(query.status ? { status: query.status } : {}),
+    ...(query.search
+      ? {
+          OR: [
+            { ticketNumber: { contains: query.search, mode: "insensitive" as const } },
+            { summary: { contains: query.search, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+
+  try {
+    const [totalItems, tickets] = await Promise.all([
+      prisma.ticket.count({ where }),
+      prisma.ticket.findMany({
+        where,
+        // BR-23 — the requested sort, then id desc so ties are deterministic.
+        orderBy: [{ [query.sort]: query.order }, { id: "desc" }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        select: {
+          id: true,
+          ticketNumber: true,
+          summary: true,
+          requestedPriority: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          category: { select: { id: true, name: true } },
+          relatedSystem: { select: { id: true, name: true } },
+          // Active attachments only (BR-33, BR-39).
+          attachments: { where: { removedAt: null }, select: { id: true } },
+        },
+      }),
+    ]);
+
+    res.status(200).json({
+      items: tickets.map(({ attachments, ...ticket }) => ({
+        ...ticket,
+        attachmentCount: attachments.length,
+      })),
+      page: query.page,
+      pageSize: query.pageSize,
+      totalItems,
+      // BR-27 — a page past the end is an empty page, not an error.
+      totalPages: Math.max(1, Math.ceil(totalItems / query.pageSize)),
+    });
+  } catch {
+    res.status(500).json({ error: "Unable to load tickets" });
   }
 });
