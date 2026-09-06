@@ -70,6 +70,23 @@ metadata survives, the content does not.
 My response: "Pass omg thanks" — reviewed and merged after the two layout defects found by the
 responsive run were fixed in the same PR.
 
+**PR #28 — Final documentation**
+> **@asamapornch:** docs done and test result match. approve
+
+My response: "Finally thank you" — the reviewer checked the numbers in `tests.md` against the actual
+test output rather than taking the summary on trust.
+
+**PR #29 — Documentation set completed**
+> **@asamapornch:** nice, ready to merge
+
+My response: "finally the last ig thanks" — last documentation pass before the release Pull Request.
+
+**PR #30 — Lab 2 release into `main`**
+> **@asamapornch:** everything merged. test green. approve
+
+My response: "Thank you" — the release Pull Request was reviewed on a clean `lab2-staging`, and the
+full suite was run again on `main` after the merge.
+
 ---
 
 ## 2. Pull Requests I reviewed for my partner
