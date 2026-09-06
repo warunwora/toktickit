@@ -1,5 +1,7 @@
 // Prisma schema — datasource and generator are pre-wired.
 // Your DATABASE_URL lives in server/.env (copy it from .env.example).
+//
+// The Lab 2 models follow docs/lab-02/specification.md §7 (Data Changes).
 
 generator client {
   provider = "prisma-client-js"
@@ -11,16 +13,107 @@ datasource db {
 }
 
 // ---------------------------------------------------------------------------
-// Issue 3 — Create and seed IT request categories
-// Define a Category model with:
-//   id        Int      @id @default(autoincrement())
-//   name      String   @unique
-//   createdAt DateTime @default(now())
-// Then run:  npx prisma migrate dev --name init
+// Reference data
 // ---------------------------------------------------------------------------
 
 model Category {
   id        Int      @id @default(autoincrement())
   name      String   @unique
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+
+  tickets Ticket[]
+}
+
+model RelatedSystem {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tickets Ticket[]
+}
+
+// ---------------------------------------------------------------------------
+// Development Requester — Lab 2 testing identity only (BR-05).
+// This is NOT authentication. Lab 3 replaces it with a real authenticated user.
+// ---------------------------------------------------------------------------
+
+model RequesterUser {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  department String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tickets             Ticket[]
+  uploadedAttachments Attachment[] @relation("AttachmentUploader")
+  removedAttachments  Attachment[] @relation("AttachmentRemover")
+}
+
+// ---------------------------------------------------------------------------
+// Tickets
+// ---------------------------------------------------------------------------
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// Single value in Lab 2 (BR-02). Lab 3 adds the rest of the lifecycle.
+enum TicketStatus {
+  NEW
+}
+
+model Ticket {
+  id                Int          @id @default(autoincrement())
+  ticketNumber      String       @unique
+  requesterId       Int
+  categoryId        Int
+  relatedSystemId   Int
+  summary           String
+  description       String
+  requestedPriority Priority
+  status            TicketStatus @default(NEW)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  requester     RequesterUser @relation(fields: [requesterId], references: [id], onDelete: Restrict)
+  category      Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  relatedSystem RelatedSystem @relation(fields: [relatedSystemId], references: [id], onDelete: Restrict)
+  attachments   Attachment[]
+
+  // My Tickets always filters by requester and sorts by createdAt desc (BR-14, BR-23).
+  @@index([requesterId, createdAt])
+  @@index([requesterId, status])
+  @@index([requesterId, categoryId])
+}
+
+// ---------------------------------------------------------------------------
+// Attachments — removal is always soft (BR-36). No row is ever deleted.
+// ---------------------------------------------------------------------------
+
+model Attachment {
+  id                    Int       @id @default(autoincrement())
+  ticketId              Int
+  originalFilename      String
+  storedFilename        String    @unique
+  mimeType              String
+  sizeBytes             Int
+  uploadedByRequesterId Int
+  uploadedAt            DateTime  @default(now())
+  removedAt             DateTime?
+  removalReason         String?
+  removedByRequesterId  Int?
+
+  ticket     Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedBy RequesterUser  @relation("AttachmentUploader", fields: [uploadedByRequesterId], references: [id], onDelete: Restrict)
+  removedBy  RequesterUser? @relation("AttachmentRemover", fields: [removedByRequesterId], references: [id], onDelete: Restrict)
+
+  // Active-attachment count (BR-33) and the detail screen both read by ticket + removal state.
+  @@index([ticketId, removedAt])
 }
