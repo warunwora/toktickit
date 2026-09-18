@@ -4,21 +4,16 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import * as reference from "../../src/api/reference.js";
 import * as ticketsApi from "../../src/api/tickets.js";
-import { REQUESTER_STORAGE_KEY } from "../../src/api/client.js";
-import { RequesterProvider } from "../../src/context/RequesterContext.js";
+import { AuthProvider } from "../../src/context/AuthContext.js";
+import { REQUESTER, signedInAs } from "../helpers/auth.js";
 import CreateTicket from "../../src/pages/CreateTicket.js";
 import MyTickets from "../../src/pages/MyTickets.js";
 
 // STYLE-01 … STYLE-05 — docs/lab-02/tests.md §2.4, ui-spec.md §3–§8
 
-const REQUESTERS = [
-  { id: 1, name: "Napat Srisai", email: "napat.sri@kmutt.ac.th", department: "Faculty of Engineering" },
-];
-
 beforeEach(() => {
   window.localStorage.clear();
-  window.localStorage.setItem(REQUESTER_STORAGE_KEY, "1");
-  vi.spyOn(reference, "getRequesters").mockResolvedValue(REQUESTERS);
+  signedInAs(REQUESTER);
   vi.spyOn(reference, "getCategories").mockResolvedValue([{ id: 2, name: "Hardware" }]);
   vi.spyOn(reference, "getRelatedSystems").mockResolvedValue([{ id: 7, name: "Corporate Laptop" }]);
 });
@@ -30,9 +25,9 @@ afterEach(() => {
 function renderCreateTicket() {
   return render(
     <MemoryRouter>
-      <RequesterProvider>
+      <AuthProvider>
         <CreateTicket />
-      </RequesterProvider>
+      </AuthProvider>
     </MemoryRouter>
   );
 }
@@ -103,6 +98,10 @@ describe("Zen Green form styling", () => {
       ticketNumber: "TKT-2026-000001",
       status: "NEW",
       requestedPriority: "MEDIUM",
+      itPriority: "MEDIUM",
+      owner: null,
+      resolutionSummary: null,
+      requesterResolvedAt: null,
       summary: "Laptop battery drains fast",
       description: "…",
       requester: { id: 1, name: "Napat Srisai" },
@@ -142,9 +141,9 @@ describe("Zen Green badges and accessibility hooks", () => {
 
     render(
       <MemoryRouter>
-        <RequesterProvider>
+        <AuthProvider>
           <MyTickets />
-        </RequesterProvider>
+        </AuthProvider>
       </MemoryRouter>
     );
 

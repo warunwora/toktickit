@@ -11,7 +11,7 @@ import {
   formatFileSize,
   uploadAttachment,
 } from "../api/attachments.js";
-import { useRequester } from "../context/RequesterContext.js";
+import { useAuth } from "../context/AuthContext.js";
 
 // Create Ticket — docs/lab-02/ui-spec.md §7.2, api-spec.md §3.1.
 
@@ -65,7 +65,7 @@ function validate(values: FormValues): Record<string, string> {
 }
 
 export default function CreateTicket() {
-  const { requester } = useRequester();
+  const { user } = useAuth();
 
   const [referenceState, setReferenceState] = useState<ReferenceState>("loading");
   const [categories, setCategories] = useState<ReferenceItem[]>([]);
@@ -319,7 +319,7 @@ export default function CreateTicket() {
               className="zg-input zg-readonly"
               readOnly
               aria-readonly="true"
-              value={requester?.name ?? ""}
+              value={user?.name ?? ""}
             />
           </div>
         </section>

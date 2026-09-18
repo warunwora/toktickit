@@ -1,24 +1,57 @@
 import { useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
-import { useRequester } from "../context/RequesterContext.js";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { RoleName } from "../api/auth.js";
+import { useAuth } from "../context/AuthContext.js";
+import { RoleBadge } from "./Badges.js";
 
-// Application shell — docs/lab-02/ui-spec.md §6.
-// Rendered only once a Development Requester is selected (BR-09).
+// Application shell — docs/lab-03/ui-spec.md §4.
+// Navigation shows only the destinations the role may use; the backend
+// enforces the same rule, which is what actually protects the data (BR-21).
+
+interface NavItem {
+  to: string;
+  label: string;
+  end?: boolean;
+}
+
+const NAVIGATION: Record<RoleName, NavItem[]> = {
+  REQUESTER: [
+    { to: "/tickets", label: "My Tickets", end: true },
+    { to: "/tickets/new", label: "Create Ticket" },
+    { to: "/account", label: "Account" },
+  ],
+  IT_STAFF: [{ to: "/account", label: "Account" }],
+  ADMINISTRATOR: [{ to: "/account", label: "Account" }],
+};
 
 function navClass({ isActive }: { isActive: boolean }) {
   return isActive ? "zg-nav-link zg-nav-link-active" : "zg-nav-link";
 }
 
 export default function AppShell() {
-  const { requester, changeRequester } = useRequester();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  if (!user) return null;
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await signOut();
+      navigate("/login", { replace: true });
+    } finally {
+      setSigningOut(false);
+    }
+  }
 
   return (
     <>
       <header className="zg-header">
         <div className="zg-header-bar zg-page">
           <div className="zg-header-left">
-            <Link to="/tickets" className="zg-brand">
+            <Link to="/" className="zg-brand">
               TokTickIT
             </Link>
             <button
@@ -33,21 +66,32 @@ export default function AppShell() {
           </div>
 
           <nav id="zg-main-nav" aria-label="Main" className={menuOpen ? "zg-nav zg-nav-open" : "zg-nav"}>
-            <NavLink to="/tickets" end className={navClass} onClick={() => setMenuOpen(false)}>
-              My Tickets
-            </NavLink>
-            <NavLink to="/tickets/new" className={navClass} onClick={() => setMenuOpen(false)}>
-              Create Ticket
-            </NavLink>
+            {NAVIGATION[user.role].map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={navClass}
+                onClick={() => setMenuOpen(false)}
+              >
+                {item.label}
+              </NavLink>
+            ))}
           </nav>
 
           <div className="zg-header-identity">
-            <span>
-              <span className="visually-hidden">Development Requester: </span>
-              {requester?.name}
+            <span className="zg-identity-name">
+              <span className="visually-hidden">Signed in as </span>
+              {user.name}
             </span>
-            <button type="button" className="zg-btn zg-btn-tertiary" onClick={changeRequester}>
-              Change Requester
+            <RoleBadge value={user.role} />
+            <button
+              type="button"
+              className="zg-btn zg-btn-tertiary"
+              onClick={handleSignOut}
+              disabled={signingOut}
+            >
+              {signingOut ? "Logging out…" : "Logout"}
             </button>
           </div>
         </div>

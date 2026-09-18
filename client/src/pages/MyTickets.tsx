@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { getCategories, getRelatedSystems, ReferenceItem } from "../api/reference.js";
 import { listTickets, TicketListResponse } from "../api/tickets.js";
 import { PriorityBadge, StatusBadge } from "../components/Badges.js";
-import { useRequester } from "../context/RequesterContext.js";
 
 // My Tickets — docs/lab-02/ui-spec.md §7.3, api-spec.md §3.2.
 
@@ -44,8 +43,6 @@ function formatDate(value: string): string {
 }
 
 export default function MyTickets() {
-  const { version } = useRequester();
-
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
@@ -87,11 +84,6 @@ export default function MyTickets() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // BR-08 — a requester switch reloads the list for the new identity.
-  useEffect(() => {
-    setPage(1);
-  }, [version]);
-
   useEffect(() => {
     let cancelled = false;
     setState("loading");
@@ -120,7 +112,7 @@ export default function MyTickets() {
     return () => {
       cancelled = true;
     };
-  }, [filters, page, version, reloadToken]);
+  }, [filters, page, reloadToken]);
 
   function updateFilter(field: keyof Filters, value: string | number) {
     setFilters((current) => ({ ...current, [field]: value }));
