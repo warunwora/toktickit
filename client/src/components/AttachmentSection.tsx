@@ -18,9 +18,14 @@ interface Props {
   ticketId: number;
   attachments: Attachment[];
   onChange: (attachments: Attachment[]) => void;
+  /**
+   * IT Staff see the same list and download from it, but adding and removing
+   * stay with the Requester who owns the ticket (Lab 3 ui-spec.md §5.5).
+   */
+  readOnly?: boolean;
 }
 
-export default function AttachmentSection({ ticketId, attachments, onChange }: Props) {
+export default function AttachmentSection({ ticketId, attachments, onChange, readOnly = false }: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -107,7 +112,9 @@ export default function AttachmentSection({ ticketId, attachments, onChange }: P
       </h2>
 
       <p className="zg-muted">
-        {activeCount} of {MAX_ACTIVE_ATTACHMENTS} active attachments · {ATTACHMENT_RULES_TEXT}
+        {readOnly
+          ? `${activeCount} active attachment${activeCount === 1 ? "" : "s"}`
+          : `${activeCount} of ${MAX_ACTIVE_ATTACHMENTS} active attachments · ${ATTACHMENT_RULES_TEXT}`}
       </p>
 
       {uploadError && (
@@ -163,21 +170,25 @@ export default function AttachmentSection({ ticketId, attachments, onChange }: P
                 >
                   Download
                 </button>
-                <button
-                  type="button"
-                  className="zg-btn zg-btn-destructive"
-                  onClick={() => openRemoval(attachment)}
-                  disabled={removed}
-                  aria-label={`Remove ${attachment.originalFilename}`}
-                >
-                  Remove
-                </button>
+                {readOnly ? null : (
+                  <button
+                    type="button"
+                    className="zg-btn zg-btn-destructive"
+                    onClick={() => openRemoval(attachment)}
+                    disabled={removed}
+                    aria-label={`Remove ${attachment.originalFilename}`}
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
             </li>
           );
         })}
       </ul>
 
+      {readOnly ? null : (
+        <>
       <input
         ref={fileInput}
         id="attachmentFile"
@@ -255,6 +266,8 @@ export default function AttachmentSection({ ticketId, attachments, onChange }: P
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </section>
   );

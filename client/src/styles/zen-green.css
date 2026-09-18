@@ -863,3 +863,109 @@ a:focus-visible {
 .zg-queue-table td:nth-child(3) {
   min-width: 220px;
 }
+
+/* ---------- ticket conversation and operations (Lab 3, ui-spec.md §5.5) ---------- */
+
+.zg-thread-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--zg-space-2);
+  margin-bottom: var(--zg-space-3);
+}
+
+/* The warning surface is reserved for "do not treat this like ordinary
+   content", which is exactly what a private note is. The left border makes the
+   difference visible before a single word is typed (AC-38). */
+.zg-notes {
+  background: var(--zg-warning-bg);
+  border-left: 3px solid var(--zg-warning);
+}
+
+.zg-notes-caption {
+  color: var(--zg-warning);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.zg-thread {
+  list-style: none;
+  margin: 0 0 var(--zg-space-3);
+  padding: 0;
+}
+
+.zg-thread-entry + .zg-thread-entry {
+  margin-top: var(--zg-space-3);
+  padding-top: var(--zg-space-3);
+  border-top: 1px solid var(--zg-border);
+}
+
+.zg-thread-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--zg-space-2);
+  font-size: 0.8125rem;
+  color: var(--zg-text-muted);
+  margin-bottom: var(--zg-space-1);
+}
+
+.zg-thread-author {
+  font-weight: 600;
+  color: var(--zg-text);
+}
+
+/* A pasted log or stack trace must not widen the page (AC-48). */
+.zg-thread-body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.zg-empty-line {
+  color: var(--zg-text-muted);
+  margin-bottom: var(--zg-space-3);
+}
+
+.zg-thread-form {
+  margin-top: var(--zg-space-3);
+}
+
+.zg-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--zg-space-2);
+  margin-top: var(--zg-space-4);
+}
+
+.zg-tab {
+  background: transparent;
+  border: 1px solid var(--zg-border);
+  border-radius: var(--zg-radius);
+  padding: var(--zg-space-2) var(--zg-space-3);
+  font-weight: 600;
+  color: var(--zg-text-muted);
+  cursor: pointer;
+}
+
+.zg-tab:hover {
+  color: var(--zg-text);
+}
+
+.zg-tab-active {
+  background: var(--zg-surface);
+  border-color: var(--zg-primary);
+  color: var(--zg-primary);
+}
+
+.zg-tab:focus-visible {
+  outline: 2px solid var(--zg-primary);
+  outline-offset: 2px;
+}
+
+/* The one card on this screen whose controls actually write something, so it
+   is bordered more strongly than the read-only information above it. */
+.zg-operations {
+  border-left: 3px solid var(--zg-primary);
+}
