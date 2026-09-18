@@ -74,3 +74,37 @@ export function getQueue(query: QueueQuery): Promise<QueueResponse> {
 export function getStaffTicket(id: number): Promise<StaffTicket> {
   return apiFetch<StaffTicket>(`/api/staff/tickets/${id}`);
 }
+
+// --- Ticket operations — api-spec.md §6.3-§6.5 ------------------------------
+
+export interface AssignableUser {
+  id: number;
+  name: string;
+}
+
+export function getAssignableUsers(): Promise<AssignableUser[]> {
+  return apiFetch<{ users: AssignableUser[] }>("/api/staff/assignable-users").then((body) => body.users);
+}
+
+/** `null` releases the ticket back to unassigned; claiming is assigning oneself. */
+export function updateOwner(ticketId: number, ownerId: number | null): Promise<StaffTicket> {
+  return apiFetch<StaffTicket>(`/api/staff/tickets/${ticketId}/owner`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ownerId }),
+  });
+}
+
+export interface TicketOperationPayload {
+  itPriority?: Priority;
+  status?: TicketStatus;
+  resolutionSummary?: string;
+}
+
+export function updateStaffTicket(ticketId: number, payload: TicketOperationPayload): Promise<StaffTicket> {
+  return apiFetch<StaffTicket>(`/api/staff/tickets/${ticketId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}

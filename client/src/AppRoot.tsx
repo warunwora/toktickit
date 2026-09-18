@@ -8,6 +8,7 @@ import ChangePassword from "./pages/ChangePassword.js";
 import Account from "./pages/Account.js";
 import MyTickets from "./pages/MyTickets.js";
 import StaffTicketQueue from "./pages/StaffTicketQueue.js";
+import StaffTicketDetail from "./pages/StaffTicketDetail.js";
 import CreateTicket from "./pages/CreateTicket.js";
 import RequesterTicketDetail from "./pages/RequesterTicketDetail.js";
 import App from "./App.js";
@@ -57,6 +58,7 @@ export function AppRoutes() {
         }
       >
         <Route path="/staff/queue" element={<StaffTicketQueue />} />
+        <Route path="/staff/tickets/:id" element={<StaffTicketDetail />} />
       </Route>
 
       <Route

@@ -3,11 +3,16 @@ import { Link, useParams } from "react-router-dom";
 import { ApiError } from "../api/client.js";
 import { getTicket, Ticket } from "../api/tickets.js";
 import { Attachment } from "../api/attachments.js";
+import { ConversationEntry, getComments, markProblemResolved, postComment } from "../api/conversation.js";
 import { PriorityBadge, StatusBadge } from "../components/Badges.js";
 import AttachmentSection from "../components/AttachmentSection.js";
+import ConversationThread from "../components/ConversationThread.js";
 
-// Requester Ticket Detail (view mode) — docs/lab-02/ui-spec.md §7.5.
-// Every ticket field is read-only here (BR-04, AC-25).
+// Requester Ticket Detail (view mode) — docs/lab-02/ui-spec.md §7.5, extended
+// by docs/lab-03/ui-spec.md §5.3. Every ticket field stays read-only (BR-04,
+// AC-25); what the Requester gains is a voice: a Public Comment thread and a
+// way to say the problem appears resolved. Internal Notes do not exist on this
+// screen in any form (AC-14).
 
 type LoadState = "loading" | "ready" | "notFound" | "failed";
 
@@ -32,6 +37,12 @@ export default function RequesterTicketDetail() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [reloadToken, setReloadToken] = useState(0);
 
+  const [comments, setComments] = useState<ConversationEntry[]>([]);
+  const [resolvedAt, setResolvedAt] = useState<string | null>(null);
+  const [confirmingResolved, setConfirmingResolved] = useState(false);
+  const [markingResolved, setMarkingResolved] = useState(false);
+  const [resolvedError, setResolvedError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!Number.isInteger(ticketId)) {
       setState("notFound");
@@ -46,7 +57,18 @@ export default function RequesterTicketDetail() {
         if (cancelled) return;
         setTicket(loaded);
         setAttachments((loaded.attachments as Attachment[]) ?? []);
+        setResolvedAt(loaded.requesterResolvedAt);
         setState("ready");
+
+        // The thread is a second request so a comment failure never stops the
+        // ticket itself from rendering.
+        getComments(ticketId)
+          .then((body) => {
+            if (!cancelled) setComments(body.comments);
+          })
+          .catch(() => {
+            if (!cancelled) setComments([]);
+          });
       })
       .catch((error) => {
         if (cancelled) return;
@@ -95,6 +117,21 @@ export default function RequesterTicketDetail() {
     );
   }
 
+  async function confirmProblemResolved() {
+    setMarkingResolved(true);
+    setResolvedError(null);
+
+    try {
+      const updated = await markProblemResolved(ticket!.id);
+      setResolvedAt(updated.requesterResolvedAt);
+      setConfirmingResolved(false);
+    } catch {
+      setResolvedError("That could not be sent to IT Staff. Please try again.");
+    } finally {
+      setMarkingResolved(false);
+    }
+  }
+
   return (
     <main className="zg-page">
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
@@ -102,10 +139,65 @@ export default function RequesterTicketDetail() {
           <h1 className="zg-page-title mb-0">{ticket.ticketNumber}</h1>
           <StatusBadge value={ticket.status} />
         </div>
-        <Link className="zg-btn zg-btn-secondary" to="/tickets">
-          Back to My Tickets
-        </Link>
+        <div className="d-flex flex-wrap gap-2">
+          {resolvedAt ? null : (
+            <button
+              type="button"
+              className="zg-btn zg-btn-secondary"
+              onClick={() => setConfirmingResolved(true)}
+            >
+              The problem appears resolved
+            </button>
+          )}
+          <Link className="zg-btn zg-btn-secondary" to="/tickets">
+            Back to My Tickets
+          </Link>
+        </div>
       </div>
+
+      {resolvedAt ? (
+        <div className="zg-callout zg-callout-success" role="status">
+          You told IT Staff that this problem appears resolved.
+        </div>
+      ) : null}
+
+      {resolvedError ? (
+        <div className="zg-callout zg-callout-error" role="alert">
+          {resolvedError}
+        </div>
+      ) : null}
+
+      {confirmingResolved ? (
+        <div className="zg-modal" role="dialog" aria-modal="true" aria-labelledby="resolved-heading">
+          <div className="zg-modal-panel">
+            <h3 className="zg-section-title" id="resolved-heading">
+              Tell IT Staff the problem appears resolved?
+            </h3>
+            <p>
+              This lets IT Staff know the problem seems to be gone. They still decide when the ticket is
+              resolved or closed, so its status does not change (BR-40).
+            </p>
+            <div className="d-flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="zg-btn zg-btn-primary"
+                onClick={confirmProblemResolved}
+                disabled={markingResolved}
+              >
+                {markingResolved ? "Sending…" : "Yes, tell IT Staff"}
+              </button>
+              <button
+                type="button"
+                className="zg-btn zg-btn-secondary"
+                onClick={() => setConfirmingResolved(false)}
+                disabled={markingResolved}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <section className="zg-card" aria-label="Ticket information">
         <div className="row g-3">
@@ -153,6 +245,13 @@ export default function RequesterTicketDetail() {
       </section>
 
       <AttachmentSection ticketId={ticket.id} attachments={attachments} onChange={setAttachments} />
+
+      <ConversationThread
+        variant="comment"
+        entries={comments}
+        onPost={(body) => postComment(ticket.id, body)}
+        onPosted={(entry) => setComments((current) => [...current, entry])}
+      />
     </main>
   );
 }

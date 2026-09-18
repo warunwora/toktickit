@@ -63,9 +63,14 @@ function queue(query: string, userId = staffId) {
   return request(app).get(`/api/staff/tickets${query}`).set("Cookie", cookie(userId));
 }
 
-/** Only this suite's own tickets, so counts stay exact next to the seed data. */
-function mine(body: { tickets: { summary: string }[] }) {
-  return body.tickets.filter((t) => t.summary.startsWith(MARK));
+/**
+ * Only this suite's own tickets, so counts stay exact next to the seed data.
+ * The row type stays `any` because the assertions below read fields straight
+ * off a Supertest JSON body, which has no compile-time shape.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mine(body: { tickets: any[] }): any[] {
+  return body.tickets.filter((t) => String(t.summary).startsWith(MARK));
 }
 
 beforeAll(async () => {

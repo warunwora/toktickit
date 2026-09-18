@@ -86,7 +86,7 @@ R = Requester, S = IT Staff, A = Administrator. "own" means the row must belong 
 | `POST /api/tickets/:id/comments` | own | ✔ | ✔ |
 | `POST /api/tickets/:id/problem-resolved` | own | ✖ | ✖ |
 | `GET /api/tickets/:id/notes`, `POST /api/tickets/:id/notes` | ✖ 404 | ✔ | ✔ |
-| `GET /api/staff/tickets`, `GET /api/staff/tickets/:id` | ✖ | ✔ | ✔ |
+| `GET /api/staff/tickets`, `GET /api/staff/tickets/:id`, `GET /api/staff/assignable-users` | ✖ | ✔ | ✔ |
 | `PATCH /api/staff/tickets/:id/owner`, `PATCH /api/staff/tickets/:id` | ✖ | ✔ | ✖ |
 | `GET/POST /api/admin/users`, `PATCH /api/admin/users/:id`, `POST /api/admin/users/:id/password` | ✖ | ✖ | ✔ |
 
@@ -345,6 +345,18 @@ IT Staff only. Any subset of the three fields may be sent; an empty body is a 40
 
 **200** returns the updated ticket. A Requester or an Administrator receives 403.
 
+### 6.5 `GET /api/staff/assignable-users`
+
+IT Staff and Administrator. The Owner select needs the people a ticket may be assigned to, and the
+Administrator user endpoints in §7 are closed to IT Staff, so the queue serves its own list.
+
+```json
+{ "users": [ { "id": 7, "name": "Warin Chaiyaporn" } ] }
+```
+
+Active IT Staff only (BR-26), ordered by name. The projection is deliberately `id` and `name`: an
+assignment does not need an email address, a role or an activity flag. A Requester receives 403.
+
 ---
 
 ## 7. Administrator user management
@@ -427,3 +439,4 @@ AC-47). No other field changes.
 | C-04 | Invalid filter values fail with 400, invalid sort and paging values fall back to defaults. | A wrong filter changes which work is shown and must be loud; a wrong sort order only changes the order and must not block the queue. |
 | C-05 | `PATCH …/owner` is separate from `PATCH …/:id`. | Ownership is the one operation whose audit story differs from field edits, and separating it keeps the validation for "must be an active IT Staff user" out of the general update path. |
 | C-06 | Setting a new initial password deletes that user's sessions. | Otherwise an account whose password was just reset would stay signed in on another machine, which is the opposite of what the Administrator intended. |
+| C-07 | The Owner select reads `GET /api/staff/assignable-users` rather than the Administrator user list. | IT Staff must be able to assign a ticket without being granted the user directory; a list of id and name is the least the screen can be told (BR-24, D-10). |

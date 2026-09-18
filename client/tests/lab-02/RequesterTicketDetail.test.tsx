@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import * as reference from "../../src/api/reference.js";
 import * as ticketsApi from "../../src/api/tickets.js";
@@ -68,12 +68,16 @@ describe("Requester Ticket Detail", () => {
     expect(screen.getByLabelText(/^Summary/)).toHaveValue("Laptop battery drains fast");
     expect(screen.getByLabelText(/^Category/)).toHaveValue("Hardware");
 
-    // No control on the ticket header may be editable.
-    const editable = screen
+    // No control in the ticket information card may be editable. Lab 3 adds a
+    // Public Comment composer below this card, which is a new message rather
+    // than an edit of the ticket, so the assertion is scoped to the card
+    // (BR-04, AC-25 still hold for every ticket field).
+    const information = screen.getByLabelText("Ticket information");
+    const editable = within(information)
       .getAllByRole("textbox")
       .filter((element) => !element.hasAttribute("readonly"));
     expect(editable).toHaveLength(0);
-    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(within(information).queryByRole("combobox")).not.toBeInTheDocument();
   });
 
   it("shows the priority and status as badges with readable text", async () => {

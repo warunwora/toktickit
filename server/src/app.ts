@@ -5,6 +5,7 @@ import { authRouter } from "./routes/auth.js";
 import { referenceRouter } from "./routes/reference.js";
 import { ticketsRouter } from "./routes/tickets.js";
 import { attachmentsRouter } from "./routes/attachments.js";
+import { conversationRouter } from "./routes/conversation.js";
 import { staffRouter } from "./routes/staff.js";
 import { requireAuth, requirePasswordChanged } from "./lib/auth.js";
 
@@ -37,6 +38,10 @@ app.use(requireAuth, requirePasswordChanged);
 app.use(referenceRouter);
 app.use(ticketsRouter);
 app.use(attachmentsRouter);
+
+// Lab 3 — the shared ticket conversation: Public Comments, Internal Notes and
+// the Requester resolution indication.
+app.use(conversationRouter);
 
 // Lab 3 — the IT Staff queue and ticket operations.
 app.use(staffRouter);
