@@ -194,7 +194,7 @@ attachmentsRouter.post(
           storedFilename,
           mimeType: file.mimetype,
           sizeBytes: file.size,
-          uploadedByRequesterId: requesterId,
+          uploadedByUserId: requesterId,
         },
         select: attachmentSelect,
       });
@@ -304,7 +304,7 @@ attachmentsRouter.patch("/api/attachments/:id/remove", async (req: Request, res:
       data: {
         removedAt: new Date(),
         removalReason: reason,
-        removedByRequesterId: requesterId,
+        removedByUserId: requesterId,
       },
       select: attachmentSelect,
     });

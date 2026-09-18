@@ -40,6 +40,7 @@ async function makeTicket(requesterId: number, summary: string) {
       summary,
       description: "Seeded by the attachments API test suite to verify the attachment lifecycle.",
       requestedPriority: "LOW",
+      itPriority: "LOW",
     },
     select: { id: true, createdAt: true },
   });
@@ -71,7 +72,7 @@ async function trackStoredFilename(attachmentId: number) {
 }
 
 beforeAll(async () => {
-  const requesters = await prisma.requesterUser.findMany({
+  const requesters = await prisma.user.findMany({
     where: { isActive: true },
     orderBy: { id: "asc" },
     take: 2,

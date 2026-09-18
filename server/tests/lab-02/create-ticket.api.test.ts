@@ -41,8 +41,8 @@ async function post(body: unknown, headerId: number | string | null = requesterI
 
 beforeAll(async () => {
   const [active, inactive, category, relatedSystem] = await Promise.all([
-    prisma.requesterUser.findFirst({ where: { isActive: true }, orderBy: { id: "asc" } }),
-    prisma.requesterUser.findFirst({ where: { isActive: false }, orderBy: { id: "asc" } }),
+    prisma.user.findFirst({ where: { isActive: true }, orderBy: { id: "asc" } }),
+    prisma.user.findFirst({ where: { isActive: false }, orderBy: { id: "asc" } }),
     prisma.category.findFirst({ where: { isActive: true }, orderBy: { id: "asc" } }),
     prisma.relatedSystem.findFirst({ where: { isActive: true }, orderBy: { id: "asc" } }),
   ]);

@@ -33,8 +33,10 @@ export async function resolveRequester(req: Request): Promise<CurrentRequester> 
     throw new RequesterError(400, "A Development Requester must be selected", "X-Requester-Id");
   }
 
-  const requester = await getPrisma().requesterUser.findFirst({
-    where: { id, isActive: true },
+  // Lab 3 Issue 2 renamed RequesterUser to User, so this lookup now has to say
+  // which role it means. Issue 3 replaces the whole body with a session lookup.
+  const requester = await getPrisma().user.findFirst({
+    where: { id, isActive: true, role: "REQUESTER" },
     select: { id: true, name: true },
   });
 

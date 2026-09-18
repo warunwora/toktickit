@@ -35,6 +35,7 @@ async function makeTicket(options: {
       summary: options.summary,
       description: `Seeded by the my-tickets API test suite (${MARK}).`,
       requestedPriority: options.priority ?? "MEDIUM",
+      itPriority: options.priority ?? "MEDIUM",
       ...(options.createdAt ? { createdAt: options.createdAt } : {}),
     },
     select: { id: true, createdAt: true },
@@ -60,10 +61,17 @@ function list(query: string, requesterId: number | null = ownerId) {
 // depend on — or delete — the tickets a developer created by hand.
 async function testRequester(slug: string) {
   const email = `lab2-${slug}@tests.toktickit.local`;
-  const requester = await prisma.requesterUser.upsert({
+  const requester = await prisma.user.upsert({
     where: { email },
     update: {},
-    create: { name: `Lab 2 test ${slug}`, email, department: "Automated tests", isActive: true },
+    create: {
+      name: `Lab 2 test ${slug}`,
+      email,
+      department: "Automated tests",
+      isActive: true,
+      // Lab 3 requires credentials on every user; these throwaway rows never log in.
+      passwordHash: "$2a$10$0000000000000000000000000000000000000000000000000000",
+    },
     select: { id: true },
   });
   return requester.id;
@@ -102,7 +110,7 @@ afterAll(async () => {
   // Leave the database exactly as the suite found it: no test tickets and no
   // test requesters lingering in the Development Requester selector.
   await prisma.ticket.deleteMany({ where: { requesterId: { in: [ownerId, otherId, emptyRequesterId] } } });
-  await prisma.requesterUser.deleteMany({ where: { id: { in: [ownerId, otherId, emptyRequesterId] } } });
+  await prisma.user.deleteMany({ where: { id: { in: [ownerId, otherId, emptyRequesterId] } } });
 });
 
 describe("GET /api/tickets", () => {

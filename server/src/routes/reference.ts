@@ -39,8 +39,8 @@ referenceRouter.get("/api/related-systems", async (_req: Request, res: Response)
 // tester picks an identity, so it deliberately needs no X-Requester-Id header.
 referenceRouter.get("/api/requesters", async (_req: Request, res: Response) => {
   try {
-    const requesters = await getPrisma().requesterUser.findMany({
-      where: { isActive: true },
+    const requesters = await getPrisma().user.findMany({
+      where: { isActive: true, role: "REQUESTER" },
       select: { id: true, name: true, email: true, department: true },
       orderBy: { id: "asc" },
     });
