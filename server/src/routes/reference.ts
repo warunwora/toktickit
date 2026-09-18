@@ -1,9 +1,9 @@
 import { Router, Request, Response } from "express";
 import { getPrisma } from "../prisma.js";
 
-// Reference data used by the Create Ticket form, the My Tickets filters, and the
-// Development Requester selector.
-// Contract: docs/lab-02/api-spec.md §2.
+// Reference data used by the Create Ticket form and the My Tickets filters.
+// Contract: docs/lab-02/api-spec.md §2; every route now requires a session
+// (docs/lab-03/api-spec.md §4).
 
 export const referenceRouter = Router();
 
@@ -35,17 +35,5 @@ referenceRouter.get("/api/related-systems", async (_req: Request, res: Response)
   }
 });
 
-// Active Development Requesters only (BR-06). This endpoint is the one place the
-// tester picks an identity, so it deliberately needs no X-Requester-Id header.
-referenceRouter.get("/api/requesters", async (_req: Request, res: Response) => {
-  try {
-    const requesters = await getPrisma().user.findMany({
-      where: { isActive: true, role: "REQUESTER" },
-      select: { id: true, name: true, email: true, department: true },
-      orderBy: { id: "asc" },
-    });
-    res.status(200).json(requesters);
-  } catch {
-    res.status(500).json({ error: "Unable to load Development Requesters" });
-  }
-});
+// GET /api/requesters is removed in Lab 3 (BR-61): identity now comes from the
+// authenticated session, not from a selector.
