@@ -569,3 +569,177 @@ a:focus-visible {
   width: 100%;
   max-width: 480px;
 }
+
+/* ===========================================================================
+   Lab 3 — docs/lab-03/ui-spec.md
+   No new colour token: every rule below reuses the Lab 2 palette.
+   =========================================================================== */
+
+/* ---------- authentication screens (§5.1, §5.2) ---------- */
+
+.zg-auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--zg-space-6) var(--zg-space-4);
+}
+
+.zg-auth-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.zg-auth-brand {
+  color: var(--zg-primary);
+  font-weight: 700;
+  margin-bottom: var(--zg-space-2);
+}
+
+.zg-helper-text {
+  color: var(--zg-text-muted);
+  font-size: 0.875rem;
+  margin-bottom: var(--zg-space-4);
+}
+
+.zg-btn-block {
+  width: 100%;
+  margin-top: var(--zg-space-4);
+}
+
+.zg-password-input {
+  display: flex;
+  gap: var(--zg-space-2);
+  align-items: flex-start;
+}
+
+.zg-password-input .zg-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.zg-password-toggle {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* The password rules read as a checklist, so nobody is told "invalid"
+   without being told what is missing (§5.2). */
+.zg-rules {
+  background: var(--zg-pale);
+  border: 1px solid var(--zg-border);
+  border-radius: var(--zg-radius);
+  padding: var(--zg-space-3) var(--zg-space-4);
+  margin-top: var(--zg-space-4);
+}
+
+.zg-rules-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: var(--zg-space-2);
+}
+
+.zg-rules-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.zg-rule {
+  display: flex;
+  gap: var(--zg-space-2);
+  align-items: baseline;
+  font-size: 0.875rem;
+  color: var(--zg-text-muted);
+}
+
+.zg-rule-met {
+  color: var(--zg-success);
+  font-weight: 600;
+}
+
+/* ---------- shell identity (§4) ---------- */
+
+.zg-identity-name {
+  font-weight: 600;
+}
+
+/* ---------- account summary ---------- */
+
+.zg-summary {
+  margin-bottom: var(--zg-space-4);
+}
+
+.zg-summary dd {
+  margin: 0;
+  padding: var(--zg-space-2) var(--zg-space-3);
+  border: 1px solid var(--zg-border);
+  border-radius: var(--zg-radius);
+}
+
+/* ---------- role badges (§2) ---------- */
+
+.zg-badge-role-requester {
+  background: var(--zg-pale);
+  color: var(--zg-primary);
+  border-color: var(--zg-primary);
+}
+
+.zg-badge-role-it-staff {
+  background: #e9eef3;
+  color: #33495c;
+  border-color: #33495c;
+}
+
+.zg-badge-role-administrator {
+  background: var(--zg-primary);
+  color: #ffffff;
+  border-color: var(--zg-primary);
+}
+
+/* ---------- ticket status badges (§3) ---------- */
+
+.zg-badge-status-open {
+  background: var(--zg-pale);
+  color: var(--zg-primary);
+  border-color: var(--zg-primary);
+}
+
+.zg-badge-status-in-progress {
+  background: var(--zg-secondary);
+  color: #ffffff;
+  border-color: var(--zg-secondary);
+}
+
+.zg-badge-status-waiting-for-requester,
+.zg-badge-status-reopened {
+  background: var(--zg-warning-bg);
+  color: var(--zg-warning);
+  border-color: var(--zg-warning);
+}
+
+.zg-badge-status-resolved {
+  background: var(--zg-success-bg);
+  color: var(--zg-success);
+  border-color: var(--zg-success);
+}
+
+.zg-badge-status-closed,
+.zg-badge-status-cancelled {
+  background: var(--zg-readonly-bg);
+  color: var(--zg-text-muted);
+}
+
+@media (max-width: 479px) {
+  .zg-auth-page {
+    padding: var(--zg-space-4) var(--zg-space-4);
+  }
+
+  .zg-password-input {
+    flex-direction: column;
+  }
+
+  .zg-password-toggle {
+    align-self: flex-start;
+  }
+}

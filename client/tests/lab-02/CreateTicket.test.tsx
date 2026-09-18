@@ -5,15 +5,13 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import * as reference from "../../src/api/reference.js";
 import * as tickets from "../../src/api/tickets.js";
 import * as attachments from "../../src/api/attachments.js";
-import { ApiError, REQUESTER_STORAGE_KEY } from "../../src/api/client.js";
-import { RequesterProvider } from "../../src/context/RequesterContext.js";
+import { ApiError } from "../../src/api/client.js";
+import { AuthProvider } from "../../src/context/AuthContext.js";
+import { REQUESTER, signedInAs } from "../helpers/auth.js";
 import CreateTicket from "../../src/pages/CreateTicket.js";
 
 // UI-04 … UI-08 — docs/lab-02/tests.md §2.3
 
-const REQUESTERS = [
-  { id: 1, name: "Napat Srisai", email: "napat.sri@kmutt.ac.th", department: "Faculty of Engineering" },
-];
 const CATEGORIES = [
   { id: 1, name: "Account and Access" },
   { id: 2, name: "Hardware" },
@@ -30,6 +28,10 @@ function createdTicket(overrides: Partial<tickets.Ticket> = {}): tickets.Ticket 
   return {
     id: 42,
     ticketNumber: "TKT-2026-000042",
+    itPriority: "MEDIUM",
+    owner: null,
+    resolutionSummary: null,
+    requesterResolvedAt: null,
     status: "NEW",
     requestedPriority: "MEDIUM",
     summary: "Laptop battery drains fast",
@@ -46,8 +48,7 @@ function createdTicket(overrides: Partial<tickets.Ticket> = {}): tickets.Ticket 
 
 beforeEach(() => {
   window.localStorage.clear();
-  window.localStorage.setItem(REQUESTER_STORAGE_KEY, "1");
-  vi.spyOn(reference, "getRequesters").mockResolvedValue(REQUESTERS);
+  signedInAs(REQUESTER);
   vi.spyOn(reference, "getCategories").mockResolvedValue(CATEGORIES);
   vi.spyOn(reference, "getRelatedSystems").mockResolvedValue(RELATED_SYSTEMS);
 });
@@ -59,13 +60,13 @@ afterEach(() => {
 function renderCreateTicket() {
   return render(
     <MemoryRouter initialEntries={["/tickets/new"]}>
-      <RequesterProvider>
+      <AuthProvider>
         <Routes>
           <Route path="/tickets/new" element={<CreateTicket />} />
           <Route path="/tickets/:id" element={<h1>Ticket Detail</h1>} />
           <Route path="/tickets" element={<h1>My Tickets</h1>} />
         </Routes>
-      </RequesterProvider>
+      </AuthProvider>
     </MemoryRouter>
   );
 }
@@ -206,9 +207,9 @@ describe("Create Ticket", () => {
   // BR-17 — backend field errors are shown next to their own field
   it("maps backend field errors onto the matching fields", async () => {
     vi.spyOn(tickets, "createTicket").mockRejectedValue(
-      new ApiError(400, "Validation failed", [
-        { field: "summary", message: "Summary must be at least 10 characters" },
-      ])
+      new ApiError(400, "Validation failed", {
+        fields: [{ field: "summary", message: "Summary must be at least 10 characters" }],
+      })
     );
 
     renderCreateTicket();

@@ -4,15 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import * as reference from "../../src/api/reference.js";
 import * as ticketsApi from "../../src/api/tickets.js";
-import { REQUESTER_STORAGE_KEY } from "../../src/api/client.js";
-import { RequesterProvider } from "../../src/context/RequesterContext.js";
+import { AuthProvider } from "../../src/context/AuthContext.js";
+import { REQUESTER, signedInAs } from "../helpers/auth.js";
 import MyTickets from "../../src/pages/MyTickets.js";
 
 // UI-10 … UI-14 — docs/lab-02/tests.md §2.3
 
-const REQUESTERS = [
-  { id: 1, name: "Napat Srisai", email: "napat.sri@kmutt.ac.th", department: "Faculty of Engineering" },
-];
 const CATEGORIES = [
   { id: 1, name: "Account and Access" },
   { id: 2, name: "Hardware" },
@@ -51,8 +48,7 @@ function page(
 
 beforeEach(() => {
   window.localStorage.clear();
-  window.localStorage.setItem(REQUESTER_STORAGE_KEY, "1");
-  vi.spyOn(reference, "getRequesters").mockResolvedValue(REQUESTERS);
+  signedInAs(REQUESTER);
   vi.spyOn(reference, "getCategories").mockResolvedValue(CATEGORIES);
   vi.spyOn(reference, "getRelatedSystems").mockResolvedValue(RELATED_SYSTEMS);
 });
@@ -64,12 +60,12 @@ afterEach(() => {
 function renderMyTickets() {
   return render(
     <MemoryRouter initialEntries={["/tickets"]}>
-      <RequesterProvider>
+      <AuthProvider>
         <Routes>
           <Route path="/tickets" element={<MyTickets />} />
           <Route path="/tickets/new" element={<h1>Create Ticket</h1>} />
         </Routes>
-      </RequesterProvider>
+      </AuthProvider>
     </MemoryRouter>
   );
 }

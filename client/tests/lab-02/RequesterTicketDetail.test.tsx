@@ -3,8 +3,9 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import * as reference from "../../src/api/reference.js";
 import * as ticketsApi from "../../src/api/tickets.js";
-import { ApiError, REQUESTER_STORAGE_KEY } from "../../src/api/client.js";
-import { RequesterProvider } from "../../src/context/RequesterContext.js";
+import { ApiError } from "../../src/api/client.js";
+import { AuthProvider } from "../../src/context/AuthContext.js";
+import { REQUESTER, signedInAs } from "../helpers/auth.js";
 import RequesterTicketDetail from "../../src/pages/RequesterTicketDetail.js";
 
 // UI-15, UI-16 — docs/lab-02/tests.md §2.3
@@ -12,6 +13,10 @@ import RequesterTicketDetail from "../../src/pages/RequesterTicketDetail.js";
 const TICKET: ticketsApi.Ticket = {
   id: 42,
   ticketNumber: "TKT-2026-000042",
+  itPriority: "HIGH",
+  owner: null,
+  resolutionSummary: null,
+  requesterResolvedAt: null,
   status: "NEW",
   requestedPriority: "HIGH",
   summary: "Laptop battery drains fast",
@@ -26,10 +31,7 @@ const TICKET: ticketsApi.Ticket = {
 
 beforeEach(() => {
   window.localStorage.clear();
-  window.localStorage.setItem(REQUESTER_STORAGE_KEY, "1");
-  vi.spyOn(reference, "getRequesters").mockResolvedValue([
-    { id: 1, name: "Napat Srisai", email: "napat.sri@kmutt.ac.th", department: "Faculty of Engineering" },
-  ]);
+  signedInAs(REQUESTER);
 });
 
 afterEach(() => {
@@ -39,12 +41,12 @@ afterEach(() => {
 function renderDetail(path = "/tickets/42") {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <RequesterProvider>
+      <AuthProvider>
         <Routes>
           <Route path="/tickets/:id" element={<RequesterTicketDetail />} />
           <Route path="/tickets" element={<h1>My Tickets</h1>} />
         </Routes>
-      </RequesterProvider>
+      </AuthProvider>
     </MemoryRouter>
   );
 }
