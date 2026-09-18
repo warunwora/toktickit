@@ -22,8 +22,8 @@ export const ROLE_LABEL: Record<RoleName, string> = {
 /** Where each role starts after signing in (docs/lab-03/ui-spec.md §4). */
 export const ROLE_HOME: Record<RoleName, string> = {
   REQUESTER: "/tickets",
-  IT_STAFF: "/account",
-  ADMINISTRATOR: "/account",
+  IT_STAFF: "/staff/queue",
+  ADMINISTRATOR: "/staff/queue",
 };
 
 export function login(email: string, password: string): Promise<{ user: AuthUser }> {

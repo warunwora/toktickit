@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import * as authApi from "../../src/api/auth.js";
 import * as reference from "../../src/api/reference.js";
 import * as ticketsApi from "../../src/api/tickets.js";
+import * as staffApi from "../../src/api/staff.js";
 import { AuthProvider } from "../../src/context/AuthContext.js";
 import { AppRoutes } from "../../src/AppRoot.js";
 import { ADMINISTRATOR, IT_STAFF, REQUESTER, signedInAs } from "../helpers/auth.js";
@@ -18,6 +19,13 @@ afterEach(() => {
 function renderApp(path: string) {
   vi.spyOn(reference, "getCategories").mockResolvedValue([{ id: 1, name: "Hardware" }]);
   vi.spyOn(reference, "getRelatedSystems").mockResolvedValue([{ id: 7, name: "Corporate Laptop" }]);
+  vi.spyOn(staffApi, "getQueue").mockResolvedValue({
+    tickets: [],
+    page: 1,
+    pageSize: 10,
+    totalItems: 0,
+    totalPages: 1,
+  });
   vi.spyOn(ticketsApi, "listTickets").mockResolvedValue({
     items: [],
     page: 1,
@@ -45,7 +53,7 @@ describe("role-aware application shell", () => {
     expect(within(nav).getByRole("link", { name: "My Tickets" })).toBeInTheDocument();
     expect(within(nav).getByRole("link", { name: "Create Ticket" })).toBeInTheDocument();
     expect(within(nav).getByRole("link", { name: "Account" })).toBeInTheDocument();
-    expect(within(nav).queryByRole("link", { name: /queue/i })).not.toBeInTheDocument();
+    expect(within(nav).queryByRole("link", { name: /ticket queue/i })).not.toBeInTheDocument();
     expect(within(nav).queryByRole("link", { name: /user management/i })).not.toBeInTheDocument();
   });
 
@@ -58,6 +66,7 @@ describe("role-aware application shell", () => {
       const nav = await screen.findByRole("navigation", { name: "Main" });
       expect(within(nav).queryByRole("link", { name: "My Tickets" })).not.toBeInTheDocument();
       expect(within(nav).queryByRole("link", { name: "Create Ticket" })).not.toBeInTheDocument();
+      expect(within(nav).getByRole("link", { name: "Ticket Queue" })).toBeInTheDocument();
       expect(within(nav).getByRole("link", { name: "Account" })).toBeInTheDocument();
 
       view.unmount();
@@ -94,8 +103,16 @@ describe("role-aware application shell", () => {
     signedInAs(IT_STAFF);
     renderApp("/tickets");
 
-    expect(await screen.findByRole("heading", { name: "Your account" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Ticket Queue" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "My Tickets" })).not.toBeInTheDocument();
+  });
+
+  it("keeps a Requester out of the staff queue", async () => {
+    signedInAs(REQUESTER);
+    renderApp("/staff/queue");
+
+    expect(await screen.findByRole("heading", { name: "My Tickets" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Ticket Queue" })).not.toBeInTheDocument();
   });
 
   // AC-12 / AC-07 — an unauthenticated visit never reaches an application screen

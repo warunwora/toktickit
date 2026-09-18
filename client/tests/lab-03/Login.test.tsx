@@ -26,6 +26,7 @@ function renderLogin() {
           <Route path="/login" element={<Login />} />
           <Route path="/tickets" element={<h1>My Tickets</h1>} />
           <Route path="/account" element={<h1>Your account</h1>} />
+          <Route path="/staff/queue" element={<h1>Ticket Queue</h1>} />
           <Route path="/change-password" element={<h1>Change Your Password</h1>} />
         </Routes>
       </AuthProvider>
@@ -115,8 +116,8 @@ describe("Login", () => {
   it("sends each role to its own landing screen", async () => {
     const cases: [authApi.AuthUser, string][] = [
       [REQUESTER, "My Tickets"],
-      [IT_STAFF, "Your account"],
-      [ADMINISTRATOR, "Your account"],
+      [IT_STAFF, "Ticket Queue"],
+      [ADMINISTRATOR, "Ticket Queue"],
     ];
 
     for (const [user, heading] of cases) {

@@ -9,7 +9,18 @@ export type SortField = (typeof SORT_FIELDS)[number];
 export const ORDERS = ["asc", "desc"] as const;
 export type SortOrder = (typeof ORDERS)[number];
 
-export const STATUSES = ["NEW"] as const;
+// Lab 3 extended the lifecycle, so a Requester can filter their own list by
+// any status the ticket can now reach (docs/lab-03/specification.md BR-33).
+export const STATUSES = [
+  "NEW",
+  "OPEN",
+  "IN_PROGRESS",
+  "WAITING_FOR_REQUESTER",
+  "RESOLVED",
+  "CLOSED",
+  "REOPENED",
+  "CANCELLED",
+] as const;
 export type StatusValue = (typeof STATUSES)[number];
 
 export const PAGE_SIZES = [5, 10, 20, 50] as const;
