@@ -743,3 +743,123 @@ a:focus-visible {
     align-self: flex-start;
   }
 }
+
+/* ---------- IT Staff queue (docs/lab-03/ui-spec.md §5.4) ---------- */
+
+.zg-result-count {
+  color: var(--zg-text-muted);
+  font-size: 0.875rem;
+  margin: var(--zg-space-4) 0 var(--zg-space-2);
+}
+
+.zg-sort-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.zg-sort-button:focus-visible {
+  outline: 2px solid var(--zg-focus);
+  outline-offset: 2px;
+}
+
+.zg-badge-unassigned {
+  background: var(--zg-readonly-bg);
+  color: var(--zg-text-muted);
+}
+
+.zg-badge-requester-resolved {
+  background: var(--zg-success-bg);
+  color: var(--zg-success);
+  border-color: var(--zg-success);
+  margin-left: var(--zg-space-2);
+}
+
+.zg-empty {
+  text-align: center;
+  color: var(--zg-text-muted);
+}
+
+/* The table is the desktop view; below 768 px it is replaced by cards so the
+   page never scrolls sideways (AC-48). */
+.zg-queue-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.zg-queue-card + .zg-queue-card {
+  margin-top: var(--zg-space-3);
+}
+
+.zg-queue-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--zg-space-2);
+}
+
+.zg-queue-card-summary {
+  margin: var(--zg-space-2) 0;
+  font-weight: 600;
+}
+
+.zg-queue-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--zg-space-2) var(--zg-space-3);
+  margin: 0;
+}
+
+.zg-queue-card-grid dt {
+  font-size: 0.8125rem;
+  color: var(--zg-text-muted);
+  font-weight: 400;
+}
+
+.zg-queue-card-grid dd {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.zg-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--zg-space-3);
+  margin-top: var(--zg-space-4);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 767px) {
+  .zg-queue-table {
+    display: none;
+  }
+
+  .zg-queue-cards {
+    display: block;
+  }
+
+  .zg-pagination {
+    justify-content: center;
+  }
+}
+
+/* Identity, dates and badges stay on one line; only the summary wraps, which
+   is what keeps the nine-column queue readable (ui-spec.md §5.4). */
+.zg-queue-table td:first-child,
+.zg-queue-table td:nth-child(2),
+.zg-queue-table td:nth-child(9),
+.zg-queue-table th {
+  white-space: nowrap;
+}
+
+.zg-queue-table td:nth-child(3) {
+  min-width: 220px;
+}

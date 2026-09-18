@@ -36,7 +36,9 @@ describe("ticket list query parsing", () => {
     expect(parseTicketListQuery({ requestedPriority: "CRITICAL" }).errors[0].field).toBe("requestedPriority");
     expect(parseTicketListQuery({ sort: "summary" }).errors[0].field).toBe("sort");
     expect(parseTicketListQuery({ order: "sideways" }).errors[0].field).toBe("order");
-    expect(parseTicketListQuery({ status: "CLOSED" }).errors[0].field).toBe("status");
+    // Lab 3 widened the status list, so the invalid value has to be one that
+    // no lifecycle state uses.
+    expect(parseTicketListQuery({ status: "ALMOST_DONE" }).errors[0].field).toBe("status");
   });
 
   it("keeps valid filters, trims search, and ignores empty values", () => {

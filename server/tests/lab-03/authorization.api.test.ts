@@ -84,6 +84,8 @@ describe("unauthenticated access", () => {
     ["POST /api/tickets/:id/attachments", () => request(app).post("/api/tickets/1/attachments")],
     ["GET /api/attachments/:id/download", () => request(app).get("/api/attachments/1/download")],
     ["PATCH /api/attachments/:id/remove", () => request(app).patch("/api/attachments/1/remove").send({})],
+    ["GET /api/staff/tickets", () => request(app).get("/api/staff/tickets")],
+    ["GET /api/staff/tickets/:id", () => request(app).get("/api/staff/tickets/1")],
   ];
 
   for (const [name, call] of protectedRequests) {
@@ -108,6 +110,16 @@ describe("role gates on the Requester endpoints", () => {
       expect(create.status).toBe(403);
       expect(list.body).toEqual({ error: "You do not have access to this resource" });
     }
+  });
+
+  it("refuses a Requester on the staff endpoints with 403", async () => {
+    const queue = await request(app).get("/api/staff/tickets").set("Cookie", cookie(requesterId));
+    const detail = await request(app)
+      .get(`/api/staff/tickets/${ownedTicketId}`)
+      .set("Cookie", cookie(requesterId));
+
+    expect(queue.status).toBe(403);
+    expect(detail.status).toBe(403);
   });
 
   it("lets IT Staff and Administrators read reference data", async () => {

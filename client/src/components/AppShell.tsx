@@ -20,8 +20,14 @@ const NAVIGATION: Record<RoleName, NavItem[]> = {
     { to: "/tickets/new", label: "Create Ticket" },
     { to: "/account", label: "Account" },
   ],
-  IT_STAFF: [{ to: "/account", label: "Account" }],
-  ADMINISTRATOR: [{ to: "/account", label: "Account" }],
+  IT_STAFF: [
+    { to: "/staff/queue", label: "Ticket Queue" },
+    { to: "/account", label: "Account" },
+  ],
+  ADMINISTRATOR: [
+    { to: "/staff/queue", label: "Ticket Queue" },
+    { to: "/account", label: "Account" },
+  ],
 };
 
 function navClass({ isActive }: { isActive: boolean }) {
