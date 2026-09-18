@@ -109,6 +109,9 @@ ticketsRouter.post("/api/tickets", async (req: Request, res: Response) => {
           summary: value.summary,
           description: value.description,
           requestedPriority: value.requestedPriority,
+          // IT Priority starts as a copy of the Requested Priority and is
+          // afterwards owned by IT Staff (BR-31, decision D-08).
+          itPriority: value.requestedPriority,
         },
         select: { id: true, createdAt: true },
       });

@@ -30,6 +30,7 @@ async function makeTicket(requesterId: number, summary: string) {
       summary,
       description: "Seeded by the ticket-detail API test suite to verify ownership behaviour.",
       requestedPriority: "MEDIUM",
+      itPriority: "MEDIUM",
     },
     select: { id: true, createdAt: true },
   });
@@ -45,7 +46,7 @@ async function makeTicket(requesterId: number, summary: string) {
 }
 
 beforeAll(async () => {
-  const requesters = await prisma.requesterUser.findMany({
+  const requesters = await prisma.user.findMany({
     where: { isActive: true },
     orderBy: { id: "asc" },
     take: 2,
