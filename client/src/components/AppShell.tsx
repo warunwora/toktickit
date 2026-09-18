@@ -26,6 +26,7 @@ const NAVIGATION: Record<RoleName, NavItem[]> = {
   ],
   ADMINISTRATOR: [
     { to: "/staff/queue", label: "Ticket Queue" },
+    { to: "/admin/users", label: "Users" },
     { to: "/account", label: "Account" },
   ],
 };

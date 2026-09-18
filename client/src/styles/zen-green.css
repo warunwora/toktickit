@@ -969,3 +969,93 @@ a:focus-visible {
 .zg-operations {
   border-left: 3px solid var(--zg-primary);
 }
+
+/* ---------- Administrator User Management (Lab 3, ui-spec.md §5.6) ---------- */
+
+.zg-admin-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--zg-space-4);
+  align-items: start;
+}
+
+/* With no panel open the list takes the whole width, rather than leaving a
+   360 px gap that squeezes the email column. */
+.zg-admin-layout-wide {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.zg-admin-list {
+  min-width: 0;
+}
+
+.zg-admin-panel {
+  position: sticky;
+  top: var(--zg-space-4);
+}
+
+.zg-panel-secondary {
+  margin-top: var(--zg-space-4);
+  padding-top: var(--zg-space-4);
+  border-top: 1px solid var(--zg-border);
+}
+
+.zg-initial-password {
+  margin-bottom: var(--zg-space-3);
+}
+
+.zg-user-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.zg-user-card + .zg-user-card {
+  margin-top: var(--zg-space-3);
+}
+
+.zg-user-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--zg-space-2);
+  margin-bottom: var(--zg-space-1);
+}
+
+.zg-user-card-name {
+  font-weight: 600;
+}
+
+/* The email column is the one that can push the table wide, so it wraps while
+   the rest stay on one line. */
+.zg-user-table td:nth-child(2) {
+  overflow-wrap: anywhere;
+}
+
+.zg-user-table td:first-child,
+.zg-user-table th {
+  white-space: nowrap;
+}
+
+/* The panel stops sitting beside the list before the table itself gives up. */
+@media (max-width: 899px) {
+  .zg-admin-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zg-admin-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 767px) {
+  .zg-user-table {
+    display: none;
+  }
+
+  .zg-user-cards {
+    display: block;
+  }
+}
