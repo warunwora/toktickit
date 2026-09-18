@@ -3,6 +3,7 @@ import request from "supertest";
 import { readFile, rm } from "node:fs/promises";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
+import { cleanUpSessions, cookie, createSessionCookie, prepareCookies } from "../helpers/session.js";
 import { formatTicketNumber } from "../../src/lib/ticket-number.js";
 import { MAX_FILE_BYTES, storedFilePath } from "../../src/lib/attachments.js";
 
@@ -58,7 +59,7 @@ async function makeTicket(requesterId: number, summary: string) {
 function uploadTo(ticketId: number, requesterId: number, filename: string, bytes: Buffer, contentType: string) {
   return request(app)
     .post(`/api/tickets/${ticketId}/attachments`)
-    .set("X-Requester-Id", String(requesterId))
+    .set("Cookie", cookie(requesterId))
     .attach("file", bytes, { filename, contentType });
 }
 
@@ -72,13 +73,16 @@ async function trackStoredFilename(attachmentId: number) {
 }
 
 beforeAll(async () => {
+  // Lab 3: the table now holds IT Staff and Administrators too, and these
+  // routes belong to the Requester role.
   const requesters = await prisma.user.findMany({
-    where: { isActive: true },
+    where: { isActive: true, role: "REQUESTER" },
     orderBy: { id: "asc" },
     take: 2,
   });
   ownerId = requesters[0].id;
   otherId = requesters[1].id;
+  await prepareCookies(ownerId, otherId);
 
   ownedTicketId = await makeTicket(ownerId, "Attachment test — owned ticket");
   foreignTicketId = await makeTicket(otherId, "Attachment test — other requester's ticket");
@@ -87,6 +91,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await prisma.attachment.deleteMany({ where: { ticketId: { in: createdTicketIds } } });
   await prisma.ticket.deleteMany({ where: { id: { in: createdTicketIds } } });
+  await cleanUpSessions();
   for (const stored of storedFilenames) {
     await rm(storedFilePath(stored), { force: true });
   }
@@ -174,7 +179,7 @@ describe("POST /api/tickets/:id/attachments", () => {
 
     await request(app)
       .patch(`/api/attachments/${uploaded[0]}/remove`)
-      .set("X-Requester-Id", String(ownerId))
+      .set("Cookie", cookie(ownerId))
       .send({ reason: "Uploaded the wrong screenshot" })
       .expect(200);
 
@@ -206,7 +211,7 @@ describe("attachment metadata, download, and soft removal", () => {
   it("downloads an active attachment with its original filename", async () => {
     const res = await request(app)
       .get(`/api/attachments/${attachmentId}/download`)
-      .set("X-Requester-Id", String(ownerId));
+      .set("Cookie", cookie(ownerId));
 
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("image/png");
@@ -218,7 +223,7 @@ describe("attachment metadata, download, and soft removal", () => {
   it("answers 404 when another requester tries to download it", async () => {
     const res = await request(app)
       .get(`/api/attachments/${attachmentId}/download`)
-      .set("X-Requester-Id", String(otherId));
+      .set("Cookie", cookie(otherId));
 
     expect(res.status).toBe(404);
   });
@@ -227,7 +232,7 @@ describe("attachment metadata, download, and soft removal", () => {
   it("rejects removal without a usable reason and keeps the attachment active", async () => {
     const res = await request(app)
       .patch(`/api/attachments/${attachmentId}/remove`)
-      .set("X-Requester-Id", String(ownerId))
+      .set("Cookie", cookie(ownerId))
       .send({ reason: "ab" });
 
     expect(res.status).toBe(400);
@@ -241,7 +246,7 @@ describe("attachment metadata, download, and soft removal", () => {
   it("answers 404 when another requester tries to remove it", async () => {
     const res = await request(app)
       .patch(`/api/attachments/${attachmentId}/remove`)
-      .set("X-Requester-Id", String(otherId))
+      .set("Cookie", cookie(otherId))
       .send({ reason: "Not mine to remove" });
 
     expect(res.status).toBe(404);
@@ -253,7 +258,7 @@ describe("attachment metadata, download, and soft removal", () => {
   it("soft-removes the attachment, keeping the row and its metadata", async () => {
     const res = await request(app)
       .patch(`/api/attachments/${attachmentId}/remove`)
-      .set("X-Requester-Id", String(ownerId))
+      .set("Cookie", cookie(ownerId))
       .send({ reason: "  Uploaded the wrong screenshot  " });
 
     expect(res.status).toBe(200);
@@ -274,7 +279,7 @@ describe("attachment metadata, download, and soft removal", () => {
   it("still lists the removed attachment with its reason", async () => {
     const res = await request(app)
       .get(`/api/tickets/${listTicketId}/attachments`)
-      .set("X-Requester-Id", String(ownerId));
+      .set("Cookie", cookie(ownerId));
 
     expect(res.status).toBe(200);
     const removed = res.body.find((a: { id: number }) => a.id === attachmentId);
@@ -289,7 +294,7 @@ describe("attachment metadata, download, and soft removal", () => {
   it("answers 410 and serves no content when a removed attachment is downloaded", async () => {
     const res = await request(app)
       .get(`/api/attachments/${attachmentId}/download`)
-      .set("X-Requester-Id", String(ownerId));
+      .set("Cookie", cookie(ownerId));
 
     expect(res.status).toBe(410);
     expect(res.body).toEqual({ error: "This attachment has been removed" });
@@ -299,7 +304,7 @@ describe("attachment metadata, download, and soft removal", () => {
   it("answers 409 when the same attachment is removed twice", async () => {
     const res = await request(app)
       .patch(`/api/attachments/${attachmentId}/remove`)
-      .set("X-Requester-Id", String(ownerId))
+      .set("Cookie", cookie(ownerId))
       .send({ reason: "Trying again" });
 
     expect(res.status).toBe(409);
@@ -309,7 +314,7 @@ describe("attachment metadata, download, and soft removal", () => {
   it("returns the ticket detail with both active and removed attachments", async () => {
     const res = await request(app)
       .get(`/api/tickets/${listTicketId}`)
-      .set("X-Requester-Id", String(ownerId));
+      .set("Cookie", cookie(ownerId));
 
     expect(res.status).toBe(200);
     expect(res.body.attachments.length).toBeGreaterThanOrEqual(1);
