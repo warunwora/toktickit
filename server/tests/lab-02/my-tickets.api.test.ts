@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
+import { cleanUpSessions, cookie, createSessionCookie, prepareCookies } from "../helpers/session.js";
 import { formatTicketNumber } from "../../src/lib/ticket-number.js";
 
 // API-07 … API-14 — docs/lab-02/tests.md §2.2
@@ -35,6 +36,7 @@ async function makeTicket(options: {
       summary: options.summary,
       description: `Seeded by the my-tickets API test suite (${MARK}).`,
       requestedPriority: options.priority ?? "MEDIUM",
+      itPriority: options.priority ?? "MEDIUM",
       ...(options.createdAt ? { createdAt: options.createdAt } : {}),
     },
     select: { id: true, createdAt: true },
@@ -52,7 +54,7 @@ async function makeTicket(options: {
 
 function list(query: string, requesterId: number | null = ownerId) {
   const req = request(app).get(`/api/tickets${query}`);
-  if (requesterId !== null) req.set("X-Requester-Id", String(requesterId));
+  if (requesterId !== null) req.set("Cookie", cookie(requesterId));
   return req;
 }
 
@@ -60,12 +62,22 @@ function list(query: string, requesterId: number | null = ownerId) {
 // depend on — or delete — the tickets a developer created by hand.
 async function testRequester(slug: string) {
   const email = `lab2-${slug}@tests.toktickit.local`;
-  const requester = await prisma.requesterUser.upsert({
+  const requester = await prisma.user.upsert({
     where: { email },
     update: {},
-    create: { name: `Lab 2 test ${slug}`, email, department: "Automated tests", isActive: true },
+    create: {
+      name: `Lab 2 test ${slug}`,
+      email,
+      department: "Automated tests",
+      isActive: true,
+      // Lab 3 requires credentials on every user; these throwaway rows never log
+      // in, and they must not be stuck behind the forced password change.
+      passwordHash: "$2a$10$0000000000000000000000000000000000000000000000000000",
+      mustChangePassword: false,
+    },
     select: { id: true },
   });
+  await prepareCookies(requester.id);
   return requester.id;
 }
 
@@ -102,7 +114,8 @@ afterAll(async () => {
   // Leave the database exactly as the suite found it: no test tickets and no
   // test requesters lingering in the Development Requester selector.
   await prisma.ticket.deleteMany({ where: { requesterId: { in: [ownerId, otherId, emptyRequesterId] } } });
-  await prisma.requesterUser.deleteMany({ where: { id: { in: [ownerId, otherId, emptyRequesterId] } } });
+  await prisma.user.deleteMany({ where: { id: { in: [ownerId, otherId, emptyRequesterId] } } });
+  await cleanUpSessions();
 });
 
 describe("GET /api/tickets", () => {
@@ -228,10 +241,9 @@ describe("GET /api/tickets", () => {
     expect(res.body.totalPages).toBe(1);
   });
 
-  it("requires a Development Requester header", async () => {
+  it("requires an authenticated session", async () => {
     const res = await list("", null);
 
-    expect(res.status).toBe(400);
-    expect(res.body.field).toBe("X-Requester-Id");
+    expect(res.status).toBe(401);
   });
 });

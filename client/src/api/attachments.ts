@@ -41,7 +41,7 @@ export function checkFile(file: File): string | null {
 }
 
 export function listAttachments(ticketId: number): Promise<Attachment[]> {
-  return apiFetch<Attachment[]>(`/api/tickets/${ticketId}/attachments`, { withRequester: true });
+  return apiFetch<Attachment[]>(`/api/tickets/${ticketId}/attachments`);
 }
 
 export function uploadAttachment(ticketId: number, file: File): Promise<Attachment> {
@@ -50,7 +50,6 @@ export function uploadAttachment(ticketId: number, file: File): Promise<Attachme
   // No Content-Type header: the browser adds the multipart boundary itself.
   return apiFetch<Attachment>(`/api/tickets/${ticketId}/attachments`, {
     method: "POST",
-    withRequester: true,
     body,
   });
 }
@@ -58,7 +57,6 @@ export function uploadAttachment(ticketId: number, file: File): Promise<Attachme
 export function removeAttachment(attachmentId: number, reason: string): Promise<Attachment> {
   return apiFetch<Attachment>(`/api/attachments/${attachmentId}/remove`, {
     method: "PATCH",
-    withRequester: true,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ reason }),
   });

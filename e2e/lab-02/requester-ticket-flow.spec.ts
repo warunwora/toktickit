@@ -1,10 +1,13 @@
 import { test, expect, Page } from "@playwright/test";
+import { ACCOUNTS, signInAs, signOut } from "../helpers/auth.js";
 
-// E2E-01 … E2E-04 — docs/lab-02/tests.md §2.5
+// E2E-01 … E2E-04 — docs/lab-02/tests.md §2.5, kept as Lab 3 regression
+// evidence (BR-62). Only the identity step changed: Lab 3 removed the
+// Development Requester selector, so each test signs in instead.
 // Runs against the real client, API, and PostgreSQL.
 
-const REQUESTER_A = "Napat Srisai";
-const REQUESTER_B = "Chanya Pholrat";
+const REQUESTER_A = ACCOUNTS.requester;
+const REQUESTER_B = ACCOUNTS.otherRequester;
 
 const RUN = `E2E ${Date.now()}`;
 const SUMMARY = `${RUN} monitor flickers on the docking station`;
@@ -16,17 +19,14 @@ const PNG_BYTES = Buffer.from(
   "hex"
 );
 
-async function selectRequester(page: Page, name: string) {
-  await expect(page.getByText(/this is not a login screen/i)).toBeVisible();
-  const option = page.locator("option", { hasText: name }).first();
-  await page.getByLabel(/Development Requester/).selectOption((await option.getAttribute("value"))!);
-  await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("heading", { name: "My Tickets" })).toBeVisible();
+async function asRequester(page: Page, account: { email: string }) {
+  await signInAs(page, account.email, /My Tickets/);
 }
 
-async function changeRequester(page: Page, name: string) {
-  await page.getByRole("button", { name: /change requester/i }).click();
-  await selectRequester(page, name);
+/** Lab 3 replaced "Change Requester" with logging out and back in (BR-61). */
+async function switchRequester(page: Page, account: { email: string }) {
+  await signOut(page);
+  await asRequester(page, account);
 }
 
 test.describe.configure({ mode: "serial" });
@@ -36,18 +36,18 @@ let ticketUrl = "";
 
 test.describe("Requester ticket flow", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/tickets");
+    await page.goto("/login");
   });
 
   // E2E-01 / AC-01, AC-03, AC-07
-  test("selects a Development Requester and creates a ticket with a backend ticket number", async ({ page }) => {
-    await selectRequester(page, REQUESTER_A);
-    await expect(page.getByText(REQUESTER_A)).toBeVisible();
+  test("signs in and creates a ticket with a backend ticket number", async ({ page }) => {
+    await asRequester(page, REQUESTER_A);
+    await expect(page.getByText(REQUESTER_A.name).first()).toBeVisible();
 
     await page.getByRole("link", { name: "Create Ticket" }).first().click();
 
-    // The requester field is filled from the selected identity, read-only.
-    await expect(page.getByLabel(/^Requester/)).toHaveValue(REQUESTER_A);
+    // The requester field is filled from the authenticated identity, read-only.
+    await expect(page.getByLabel(/^Requester/)).toHaveValue(REQUESTER_A.name);
     await expect(page.getByLabel(/Ticket Number/)).toHaveValue(/generated/i);
 
     await page.getByLabel(/^Category/).selectOption({ label: "Hardware" });
@@ -66,7 +66,7 @@ test.describe("Requester ticket flow", () => {
 
   // E2E-02 / AC-16, AC-25
   test("finds the new ticket in My Tickets and opens its detail screen", async ({ page }) => {
-    await selectRequester(page, REQUESTER_A);
+    await asRequester(page, REQUESTER_A);
 
     await page.getByLabel(/^Search/).fill(ticketNumber);
     await expect(page.getByRole("link", { name: ticketNumber })).toBeVisible();
@@ -81,7 +81,7 @@ test.describe("Requester ticket flow", () => {
 
   // E2E-03 / AC-27, AC-29, AC-30, AC-31
   test("uploads, downloads, and soft-removes an attachment", async ({ page }) => {
-    await selectRequester(page, REQUESTER_A);
+    await asRequester(page, REQUESTER_A);
     await page.goto(ticketUrl);
 
     await page.setInputFiles("#attachmentFile", {
@@ -113,12 +113,12 @@ test.describe("Requester ticket flow", () => {
 
   // E2E-04 / AC-04, AC-26
   test("hides the ticket from another Requester, including by direct URL", async ({ page }) => {
-    await selectRequester(page, REQUESTER_A);
+    await asRequester(page, REQUESTER_A);
     await page.getByLabel(/^Search/).fill(ticketNumber);
     await expect(page.getByRole("link", { name: ticketNumber })).toBeVisible();
 
-    await changeRequester(page, REQUESTER_B);
-    await expect(page.getByText(REQUESTER_B)).toBeVisible();
+    await switchRequester(page, REQUESTER_B);
+    await expect(page.getByText(REQUESTER_B.name).first()).toBeVisible();
 
     await page.getByLabel(/^Search/).fill(ticketNumber);
     await expect(page.getByRole("link", { name: ticketNumber })).toHaveCount(0);

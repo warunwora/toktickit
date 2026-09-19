@@ -569,3 +569,493 @@ a:focus-visible {
   width: 100%;
   max-width: 480px;
 }
+
+/* ===========================================================================
+   Lab 3 — docs/lab-03/ui-spec.md
+   No new colour token: every rule below reuses the Lab 2 palette.
+   =========================================================================== */
+
+/* ---------- authentication screens (§5.1, §5.2) ---------- */
+
+.zg-auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--zg-space-6) var(--zg-space-4);
+}
+
+.zg-auth-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.zg-auth-brand {
+  color: var(--zg-primary);
+  font-weight: 700;
+  margin-bottom: var(--zg-space-2);
+}
+
+.zg-helper-text {
+  color: var(--zg-text-muted);
+  font-size: 0.875rem;
+  margin-bottom: var(--zg-space-4);
+}
+
+.zg-btn-block {
+  width: 100%;
+  margin-top: var(--zg-space-4);
+}
+
+.zg-password-input {
+  display: flex;
+  gap: var(--zg-space-2);
+  align-items: flex-start;
+}
+
+.zg-password-input .zg-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.zg-password-toggle {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* The password rules read as a checklist, so nobody is told "invalid"
+   without being told what is missing (§5.2). */
+.zg-rules {
+  background: var(--zg-pale);
+  border: 1px solid var(--zg-border);
+  border-radius: var(--zg-radius);
+  padding: var(--zg-space-3) var(--zg-space-4);
+  margin-top: var(--zg-space-4);
+}
+
+.zg-rules-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: var(--zg-space-2);
+}
+
+.zg-rules-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.zg-rule {
+  display: flex;
+  gap: var(--zg-space-2);
+  align-items: baseline;
+  font-size: 0.875rem;
+  color: var(--zg-text-muted);
+}
+
+.zg-rule-met {
+  color: var(--zg-success);
+  font-weight: 600;
+}
+
+/* ---------- shell identity (§4) ---------- */
+
+.zg-identity-name {
+  font-weight: 600;
+}
+
+/* ---------- account summary ---------- */
+
+.zg-summary {
+  margin-bottom: var(--zg-space-4);
+}
+
+.zg-summary dd {
+  margin: 0;
+  padding: var(--zg-space-2) var(--zg-space-3);
+  border: 1px solid var(--zg-border);
+  border-radius: var(--zg-radius);
+}
+
+/* ---------- role badges (§2) ---------- */
+
+.zg-badge-role-requester {
+  background: var(--zg-pale);
+  color: var(--zg-primary);
+  border-color: var(--zg-primary);
+}
+
+.zg-badge-role-it-staff {
+  background: #e9eef3;
+  color: #33495c;
+  border-color: #33495c;
+}
+
+.zg-badge-role-administrator {
+  background: var(--zg-primary);
+  color: #ffffff;
+  border-color: var(--zg-primary);
+}
+
+/* ---------- ticket status badges (§3) ---------- */
+
+.zg-badge-status-open {
+  background: var(--zg-pale);
+  color: var(--zg-primary);
+  border-color: var(--zg-primary);
+}
+
+.zg-badge-status-in-progress {
+  background: var(--zg-secondary);
+  color: #ffffff;
+  border-color: var(--zg-secondary);
+}
+
+.zg-badge-status-waiting-for-requester,
+.zg-badge-status-reopened {
+  background: var(--zg-warning-bg);
+  color: var(--zg-warning);
+  border-color: var(--zg-warning);
+}
+
+.zg-badge-status-resolved {
+  background: var(--zg-success-bg);
+  color: var(--zg-success);
+  border-color: var(--zg-success);
+}
+
+.zg-badge-status-closed,
+.zg-badge-status-cancelled {
+  background: var(--zg-readonly-bg);
+  color: var(--zg-text-muted);
+}
+
+@media (max-width: 479px) {
+  .zg-auth-page {
+    padding: var(--zg-space-4) var(--zg-space-4);
+  }
+
+  .zg-password-input {
+    flex-direction: column;
+  }
+
+  .zg-password-toggle {
+    align-self: flex-start;
+  }
+}
+
+/* ---------- IT Staff queue (docs/lab-03/ui-spec.md §5.4) ---------- */
+
+.zg-result-count {
+  color: var(--zg-text-muted);
+  font-size: 0.875rem;
+  margin: var(--zg-space-4) 0 var(--zg-space-2);
+}
+
+.zg-sort-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.zg-sort-button:focus-visible {
+  outline: 2px solid var(--zg-focus);
+  outline-offset: 2px;
+}
+
+.zg-badge-unassigned {
+  background: var(--zg-readonly-bg);
+  color: var(--zg-text-muted);
+}
+
+.zg-badge-requester-resolved {
+  background: var(--zg-success-bg);
+  color: var(--zg-success);
+  border-color: var(--zg-success);
+  margin-left: var(--zg-space-2);
+}
+
+.zg-empty {
+  text-align: center;
+  color: var(--zg-text-muted);
+}
+
+/* The table is the desktop view; below 768 px it is replaced by cards so the
+   page never scrolls sideways (AC-48). */
+.zg-queue-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.zg-queue-card + .zg-queue-card {
+  margin-top: var(--zg-space-3);
+}
+
+.zg-queue-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--zg-space-2);
+}
+
+.zg-queue-card-summary {
+  margin: var(--zg-space-2) 0;
+  font-weight: 600;
+}
+
+.zg-queue-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--zg-space-2) var(--zg-space-3);
+  margin: 0;
+}
+
+.zg-queue-card-grid dt {
+  font-size: 0.8125rem;
+  color: var(--zg-text-muted);
+  font-weight: 400;
+}
+
+.zg-queue-card-grid dd {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.zg-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--zg-space-3);
+  margin-top: var(--zg-space-4);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 767px) {
+  .zg-queue-table {
+    display: none;
+  }
+
+  .zg-queue-cards {
+    display: block;
+  }
+
+  .zg-pagination {
+    justify-content: center;
+  }
+}
+
+/* Identity, dates and badges stay on one line; only the summary wraps, which
+   is what keeps the nine-column queue readable (ui-spec.md §5.4). */
+.zg-queue-table td:first-child,
+.zg-queue-table td:nth-child(2),
+.zg-queue-table td:nth-child(9),
+.zg-queue-table th {
+  white-space: nowrap;
+}
+
+.zg-queue-table td:nth-child(3) {
+  min-width: 220px;
+}
+
+/* ---------- ticket conversation and operations (Lab 3, ui-spec.md §5.5) ---------- */
+
+.zg-thread-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--zg-space-2);
+  margin-bottom: var(--zg-space-3);
+}
+
+/* The warning surface is reserved for "do not treat this like ordinary
+   content", which is exactly what a private note is. The left border makes the
+   difference visible before a single word is typed (AC-38). */
+.zg-notes {
+  background: var(--zg-warning-bg);
+  border-left: 3px solid var(--zg-warning);
+}
+
+.zg-notes-caption {
+  color: var(--zg-warning);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.zg-thread {
+  list-style: none;
+  margin: 0 0 var(--zg-space-3);
+  padding: 0;
+}
+
+.zg-thread-entry + .zg-thread-entry {
+  margin-top: var(--zg-space-3);
+  padding-top: var(--zg-space-3);
+  border-top: 1px solid var(--zg-border);
+}
+
+.zg-thread-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--zg-space-2);
+  font-size: 0.8125rem;
+  color: var(--zg-text-muted);
+  margin-bottom: var(--zg-space-1);
+}
+
+.zg-thread-author {
+  font-weight: 600;
+  color: var(--zg-text);
+}
+
+/* A pasted log or stack trace must not widen the page (AC-48). */
+.zg-thread-body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.zg-empty-line {
+  color: var(--zg-text-muted);
+  margin-bottom: var(--zg-space-3);
+}
+
+.zg-thread-form {
+  margin-top: var(--zg-space-3);
+}
+
+.zg-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--zg-space-2);
+  margin-top: var(--zg-space-4);
+}
+
+.zg-tab {
+  background: transparent;
+  border: 1px solid var(--zg-border);
+  border-radius: var(--zg-radius);
+  padding: var(--zg-space-2) var(--zg-space-3);
+  font-weight: 600;
+  color: var(--zg-text-muted);
+  cursor: pointer;
+}
+
+.zg-tab:hover {
+  color: var(--zg-text);
+}
+
+.zg-tab-active {
+  background: var(--zg-surface);
+  border-color: var(--zg-primary);
+  color: var(--zg-primary);
+}
+
+.zg-tab:focus-visible {
+  outline: 2px solid var(--zg-primary);
+  outline-offset: 2px;
+}
+
+/* The one card on this screen whose controls actually write something, so it
+   is bordered more strongly than the read-only information above it. */
+.zg-operations {
+  border-left: 3px solid var(--zg-primary);
+}
+
+/* ---------- Administrator User Management (Lab 3, ui-spec.md §5.6) ---------- */
+
+.zg-admin-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--zg-space-4);
+  align-items: start;
+}
+
+/* With no panel open the list takes the whole width, rather than leaving a
+   360 px gap that squeezes the email column. */
+.zg-admin-layout-wide {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.zg-admin-list {
+  min-width: 0;
+}
+
+.zg-admin-panel {
+  position: sticky;
+  top: var(--zg-space-4);
+}
+
+.zg-panel-secondary {
+  margin-top: var(--zg-space-4);
+  padding-top: var(--zg-space-4);
+  border-top: 1px solid var(--zg-border);
+}
+
+.zg-initial-password {
+  margin-bottom: var(--zg-space-3);
+}
+
+.zg-user-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.zg-user-card + .zg-user-card {
+  margin-top: var(--zg-space-3);
+}
+
+.zg-user-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--zg-space-2);
+  margin-bottom: var(--zg-space-1);
+}
+
+.zg-user-card-name {
+  font-weight: 600;
+}
+
+/* The email column is the one that can push the table wide, so it wraps while
+   the rest stay on one line. */
+.zg-user-table td:nth-child(2) {
+  overflow-wrap: anywhere;
+}
+
+.zg-user-table td:first-child,
+.zg-user-table th {
+  white-space: nowrap;
+}
+
+/* The panel stops sitting beside the list before the table itself gives up. */
+@media (max-width: 899px) {
+  .zg-admin-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zg-admin-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 767px) {
+  .zg-user-table {
+    display: none;
+  }
+
+  .zg-user-cards {
+    display: block;
+  }
+}

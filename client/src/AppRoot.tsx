@@ -1,26 +1,82 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { RequesterProvider } from "./context/RequesterContext.js";
-import RequireRequester from "./components/RequireRequester.js";
+import { ROLE_HOME } from "./api/auth.js";
+import { AuthProvider, useAuth } from "./context/AuthContext.js";
+import RequireAuth from "./components/RequireAuth.js";
 import AppShell from "./components/AppShell.js";
-import RequesterSelection from "./pages/RequesterSelection.js";
+import Login from "./pages/Login.js";
+import ChangePassword from "./pages/ChangePassword.js";
+import Account from "./pages/Account.js";
 import MyTickets from "./pages/MyTickets.js";
+import StaffTicketQueue from "./pages/StaffTicketQueue.js";
+import StaffTicketDetail from "./pages/StaffTicketDetail.js";
+import UserManagement from "./pages/UserManagement.js";
 import CreateTicket from "./pages/CreateTicket.js";
 import RequesterTicketDetail from "./pages/RequesterTicketDetail.js";
 import App from "./App.js";
 
+/** Sends a signed-in person to the landing screen of their own role. */
+function RoleHome() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.mustChangePassword) return <Navigate to="/change-password" replace />;
+  return <Navigate to={ROLE_HOME[user.role]} replace />;
+}
+
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/select-requester" element={<RequesterSelection />} />
+      <Route path="/login" element={<Login />} />
+
+      {/* Reachable while the initial password is still in place (BR-02). */}
+      <Route
+        path="/change-password"
+        element={
+          <RequireAuth>
+            <ChangePassword />
+          </RequireAuth>
+        }
+      />
 
       {/* Lab 1 vertical-slice page, kept reachable for its demo. */}
       <Route path="/system-check" element={<App />} />
 
       <Route
         element={
-          <RequireRequester>
+          <RequireAuth>
             <AppShell />
-          </RequireRequester>
+          </RequireAuth>
+        }
+      >
+        <Route path="/account" element={<Account />} />
+      </Route>
+
+      <Route
+        element={
+          <RequireAuth allow={["IT_STAFF", "ADMINISTRATOR"]}>
+            <AppShell />
+          </RequireAuth>
+        }
+      >
+        <Route path="/staff/queue" element={<StaffTicketQueue />} />
+        <Route path="/staff/tickets/:id" element={<StaffTicketDetail />} />
+      </Route>
+
+      <Route
+        element={
+          <RequireAuth allow={["ADMINISTRATOR"]}>
+            <AppShell />
+          </RequireAuth>
+        }
+      >
+        <Route path="/admin/users" element={<UserManagement />} />
+      </Route>
+
+      <Route
+        element={
+          <RequireAuth allow={["REQUESTER"]}>
+            <AppShell />
+          </RequireAuth>
         }
       >
         <Route path="/tickets" element={<MyTickets />} />
@@ -28,7 +84,7 @@ export function AppRoutes() {
         <Route path="/tickets/:id" element={<RequesterTicketDetail />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/tickets" replace />} />
+      <Route path="*" element={<RoleHome />} />
     </Routes>
   );
 }
@@ -36,9 +92,9 @@ export function AppRoutes() {
 export default function AppRoot() {
   return (
     <BrowserRouter>
-      <RequesterProvider>
+      <AuthProvider>
         <AppRoutes />
-      </RequesterProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

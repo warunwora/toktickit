@@ -1,15 +1,20 @@
 import { Router, Request, Response } from "express";
 import { randomUUID } from "node:crypto";
 import { getPrisma } from "../prisma.js";
-import { resolveRequester, RequesterError } from "../lib/requester.js";
+import { currentUser, requireRole } from "../lib/auth.js";
 import { validateCreateTicket } from "../lib/validation.js";
 import { formatTicketNumber } from "../lib/ticket-number.js";
 import { parseTicketListQuery } from "../lib/query.js";
 import { serializeAttachment } from "./attachments.js";
 
-// Ticket routes — contract: docs/lab-02/api-spec.md §3.
+// Requester ticket routes — contract: docs/lab-02/api-spec.md §3, re-identified
+// by docs/lab-03/api-spec.md §4: the requester is the authenticated user and a
+// requesterId supplied by the client is ignored (BR-18, BR-19).
 
 export const ticketsRouter = Router();
+
+/** Every route below belongs to the Requester role (BR-21). */
+const requesterOnly = requireRole("REQUESTER");
 
 /** Seconds within which an identical submission counts as a duplicate (BR-19). */
 const DUPLICATE_WINDOW_MS = 60_000;
@@ -23,32 +28,18 @@ const ticketDetailSelect = {
   description: true,
   createdAt: true,
   updatedAt: true,
+  itPriority: true,
+  resolutionSummary: true,
+  requesterResolvedAt: true,
   requester: { select: { id: true, name: true } },
+  owner: { select: { id: true, name: true } },
   category: { select: { id: true, name: true } },
   relatedSystem: { select: { id: true, name: true } },
 } as const;
 
-function handleRequesterError(error: unknown, res: Response): boolean {
-  if (error instanceof RequesterError) {
-    res.status(error.status).json(
-      error.field ? { error: error.message, field: error.field } : { error: error.message }
-    );
-    return true;
-  }
-  return false;
-}
-
-ticketsRouter.post("/api/tickets", async (req: Request, res: Response) => {
+ticketsRouter.post("/api/tickets", requesterOnly, async (req: Request, res: Response) => {
   const prisma = getPrisma();
-
-  let requesterId: number;
-  try {
-    requesterId = (await resolveRequester(req)).id;
-  } catch (error) {
-    if (handleRequesterError(error, res)) return;
-    res.status(500).json({ error: "Unable to create the ticket" });
-    return;
-  }
+  const requesterId = currentUser(req).id;
 
   const { errors, value } = validateCreateTicket(req.body);
   if (!value) {
@@ -109,6 +100,9 @@ ticketsRouter.post("/api/tickets", async (req: Request, res: Response) => {
           summary: value.summary,
           description: value.description,
           requestedPriority: value.requestedPriority,
+          // IT Priority starts as a copy of the Requested Priority and is
+          // afterwards owned by IT Staff (BR-31, decision D-08).
+          itPriority: value.requestedPriority,
         },
         select: { id: true, createdAt: true },
       });
@@ -126,17 +120,9 @@ ticketsRouter.post("/api/tickets", async (req: Request, res: Response) => {
   }
 });
 
-ticketsRouter.get("/api/tickets", async (req: Request, res: Response) => {
+ticketsRouter.get("/api/tickets", requesterOnly, async (req: Request, res: Response) => {
   const prisma = getPrisma();
-
-  let requesterId: number;
-  try {
-    requesterId = (await resolveRequester(req)).id;
-  } catch (error) {
-    if (handleRequesterError(error, res)) return;
-    res.status(500).json({ error: "Unable to load tickets" });
-    return;
-  }
+  const requesterId = currentUser(req).id;
 
   const { errors, value: query } = parseTicketListQuery(req.query as Record<string, unknown>);
   if (!query) {
@@ -202,21 +188,14 @@ ticketsRouter.get("/api/tickets", async (req: Request, res: Response) => {
   }
 });
 
-ticketsRouter.get("/api/tickets/:id", async (req: Request, res: Response) => {
+ticketsRouter.get("/api/tickets/:id", requesterOnly, async (req: Request, res: Response) => {
   const ticketId = Number(req.params.id);
   if (!Number.isInteger(ticketId)) {
     res.status(400).json({ error: "Invalid ticket id" });
     return;
   }
 
-  let requesterId: number;
-  try {
-    requesterId = (await resolveRequester(req)).id;
-  } catch (error) {
-    if (handleRequesterError(error, res)) return;
-    res.status(500).json({ error: "Unable to load the ticket" });
-    return;
-  }
+  const requesterId = currentUser(req).id;
 
   try {
     // BR-13 — another requester's ticket answers exactly like a missing one.

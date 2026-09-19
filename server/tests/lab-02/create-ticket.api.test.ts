@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
+import { cleanUpSessions, cookie, createSessionCookie, prepareCookies } from "../helpers/session.js";
 import { TICKET_NUMBER_PATTERN } from "../../src/lib/ticket-number.js";
 
 // API-01 … API-06 — docs/lab-02/tests.md §2.2
@@ -31,9 +32,10 @@ function validBody(summary = uniqueSummary("valid")) {
   };
 }
 
-async function post(body: unknown, headerId: number | string | null = requesterId) {
+async function post(body: unknown, identity: string | null = null) {
   const req = request(app).post("/api/tickets");
-  if (headerId !== null) req.set("X-Requester-Id", String(headerId));
+  const sessionCookie = identity ?? cookie(requesterId);
+  if (sessionCookie !== "") req.set("Cookie", sessionCookie);
   const res = await req.send(body as object);
   if (res.status === 201) createdTicketIds.push(res.body.id);
   return res;
@@ -41,8 +43,8 @@ async function post(body: unknown, headerId: number | string | null = requesterI
 
 beforeAll(async () => {
   const [active, inactive, category, relatedSystem] = await Promise.all([
-    prisma.requesterUser.findFirst({ where: { isActive: true }, orderBy: { id: "asc" } }),
-    prisma.requesterUser.findFirst({ where: { isActive: false }, orderBy: { id: "asc" } }),
+    prisma.user.findFirst({ where: { isActive: true }, orderBy: { id: "asc" } }),
+    prisma.user.findFirst({ where: { isActive: false }, orderBy: { id: "asc" } }),
     prisma.category.findFirst({ where: { isActive: true }, orderBy: { id: "asc" } }),
     prisma.relatedSystem.findFirst({ where: { isActive: true }, orderBy: { id: "asc" } }),
   ]);
@@ -51,12 +53,14 @@ beforeAll(async () => {
   inactiveRequesterId = inactive!.id;
   categoryId = category!.id;
   relatedSystemId = relatedSystem!.id;
+  await prepareCookies(requesterId);
 });
 
 afterAll(async () => {
   if (createdTicketIds.length > 0) {
     await prisma.ticket.deleteMany({ where: { id: { in: createdTicketIds } } });
   }
+  await cleanUpSessions();
 });
 
 describe("POST /api/tickets", () => {
@@ -149,30 +153,29 @@ describe("POST /api/tickets", () => {
     expect(numbers.every((n: string) => TICKET_NUMBER_PATTERN.test(n))).toBe(true);
   });
 
-  // API-06 / api-spec §1.1
-  it("rejects a request with no Development Requester header", async () => {
-    const summary = uniqueSummary("noheader");
-    const res = await post(validBody(summary), null);
+  // Lab 3 BR-20 — the Lab 2 header is gone; identity comes from the session.
+  it("rejects a request with no session", async () => {
+    const summary = uniqueSummary("nosession");
+    const res = await post(validBody(summary), "");
 
-    expect(res.status).toBe(400);
-    expect(res.body.field).toBe("X-Requester-Id");
+    expect(res.status).toBe(401);
     expect(await prisma.ticket.count({ where: { summary } })).toBe(0);
   });
 
-  it("rejects a non-numeric Development Requester header", async () => {
-    const res = await post(validBody(), "abc");
+  it("rejects an unknown session cookie", async () => {
+    const res = await post(validBody(), "toktickit_session=not-a-real-session");
 
-    expect(res.status).toBe(400);
-    expect(res.body.field).toBe("X-Requester-Id");
+    expect(res.status).toBe(401);
   });
 
-  // BR-06 — an inactive requester cannot act, even if its id is guessed
-  it("rejects an inactive Development Requester", async () => {
+  // Lab 2 BR-06, now Lab 3 BR-10 — a session belonging to a deactivated user
+  // stops working, because activation is re-checked on every request.
+  it("rejects a session that belongs to an inactive user", async () => {
     const summary = uniqueSummary("inactive");
-    const res = await post(validBody(summary), inactiveRequesterId);
+    const inactiveCookie = await createSessionCookie(inactiveRequesterId);
+    const res = await post(validBody(summary), inactiveCookie);
 
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/no longer available/i);
+    expect(res.status).toBe(401);
     expect(await prisma.ticket.count({ where: { summary } })).toBe(0);
   });
 

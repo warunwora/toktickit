@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import * as reference from "../../src/api/reference.js";
 import * as ticketsApi from "../../src/api/tickets.js";
-import { ApiError, REQUESTER_STORAGE_KEY } from "../../src/api/client.js";
-import { RequesterProvider } from "../../src/context/RequesterContext.js";
+import { ApiError } from "../../src/api/client.js";
+import { AuthProvider } from "../../src/context/AuthContext.js";
+import { REQUESTER, signedInAs } from "../helpers/auth.js";
 import RequesterTicketDetail from "../../src/pages/RequesterTicketDetail.js";
 
 // UI-15, UI-16 — docs/lab-02/tests.md §2.3
@@ -12,6 +13,10 @@ import RequesterTicketDetail from "../../src/pages/RequesterTicketDetail.js";
 const TICKET: ticketsApi.Ticket = {
   id: 42,
   ticketNumber: "TKT-2026-000042",
+  itPriority: "HIGH",
+  owner: null,
+  resolutionSummary: null,
+  requesterResolvedAt: null,
   status: "NEW",
   requestedPriority: "HIGH",
   summary: "Laptop battery drains fast",
@@ -26,10 +31,7 @@ const TICKET: ticketsApi.Ticket = {
 
 beforeEach(() => {
   window.localStorage.clear();
-  window.localStorage.setItem(REQUESTER_STORAGE_KEY, "1");
-  vi.spyOn(reference, "getRequesters").mockResolvedValue([
-    { id: 1, name: "Napat Srisai", email: "napat.sri@kmutt.ac.th", department: "Faculty of Engineering" },
-  ]);
+  signedInAs(REQUESTER);
 });
 
 afterEach(() => {
@@ -39,12 +41,12 @@ afterEach(() => {
 function renderDetail(path = "/tickets/42") {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <RequesterProvider>
+      <AuthProvider>
         <Routes>
           <Route path="/tickets/:id" element={<RequesterTicketDetail />} />
           <Route path="/tickets" element={<h1>My Tickets</h1>} />
         </Routes>
-      </RequesterProvider>
+      </AuthProvider>
     </MemoryRouter>
   );
 }
@@ -66,12 +68,16 @@ describe("Requester Ticket Detail", () => {
     expect(screen.getByLabelText(/^Summary/)).toHaveValue("Laptop battery drains fast");
     expect(screen.getByLabelText(/^Category/)).toHaveValue("Hardware");
 
-    // No control on the ticket header may be editable.
-    const editable = screen
+    // No control in the ticket information card may be editable. Lab 3 adds a
+    // Public Comment composer below this card, which is a new message rather
+    // than an edit of the ticket, so the assertion is scoped to the card
+    // (BR-04, AC-25 still hold for every ticket field).
+    const information = screen.getByLabelText("Ticket information");
+    const editable = within(information)
       .getAllByRole("textbox")
       .filter((element) => !element.hasAttribute("readonly"));
     expect(editable).toHaveLength(0);
-    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(within(information).queryByRole("combobox")).not.toBeInTheDocument();
   });
 
   it("shows the priority and status as badges with readable text", async () => {

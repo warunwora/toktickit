@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import multer from "multer";
 import { mkdir, writeFile, unlink, readFile } from "node:fs/promises";
 import { getPrisma } from "../prisma.js";
-import { resolveRequester, RequesterError } from "../lib/requester.js";
+import { currentUser, requireRole } from "../lib/auth.js";
 import { validateRemovalReason } from "../lib/validation.js";
 import {
   ALLOWED_LABEL,
@@ -70,36 +70,22 @@ export function serializeAttachment(row: AttachmentRow) {
   };
 }
 
-function handleRequesterError(error: unknown, res: Response, fallback: string): boolean {
-  if (error instanceof RequesterError) {
-    res
-      .status(error.status)
-      .json(error.field ? { error: error.message, field: error.field } : { error: error.message });
-    return true;
-  }
-  res.status(500).json({ error: fallback });
-  return true;
-}
+/** Upload, metadata and removal belong to the Requester (BR-21). */
+const requesterOnly = requireRole("REQUESTER");
 
 /** BR-13 — a ticket owned by someone else is indistinguishable from a missing one. */
 async function findOwnedTicket(ticketId: number, requesterId: number) {
   return getPrisma().ticket.findFirst({ where: { id: ticketId, requesterId }, select: { id: true } });
 }
 
-attachmentsRouter.get("/api/tickets/:id/attachments", async (req: Request, res: Response) => {
+attachmentsRouter.get("/api/tickets/:id/attachments", requesterOnly, async (req: Request, res: Response) => {
   const ticketId = Number(req.params.id);
   if (!Number.isInteger(ticketId)) {
     res.status(400).json({ error: "Invalid ticket id" });
     return;
   }
 
-  let requesterId: number;
-  try {
-    requesterId = (await resolveRequester(req)).id;
-  } catch (error) {
-    handleRequesterError(error, res, "Unable to load attachments");
-    return;
-  }
+  const requesterId = currentUser(req).id;
 
   try {
     const ticket = await findOwnedTicket(ticketId, requesterId);
@@ -122,6 +108,7 @@ attachmentsRouter.get("/api/tickets/:id/attachments", async (req: Request, res: 
 
 attachmentsRouter.post(
   "/api/tickets/:id/attachments",
+  requesterOnly,
   (req: Request, res: Response, next) => {
     upload.single("file")(req, res, (error: unknown) => {
       if (error instanceof multer.MulterError) {
@@ -147,13 +134,7 @@ attachmentsRouter.post(
       return;
     }
 
-    let requesterId: number;
-    try {
-      requesterId = (await resolveRequester(req)).id;
-    } catch (error) {
-      handleRequesterError(error, res, "Unable to store the attachment");
-      return;
-    }
+    const requesterId = currentUser(req).id;
 
     const file = req.file;
     if (!file) {
@@ -194,7 +175,7 @@ attachmentsRouter.post(
           storedFilename,
           mimeType: file.mimetype,
           sizeBytes: file.size,
-          uploadedByRequesterId: requesterId,
+          uploadedByUserId: requesterId,
         },
         select: attachmentSelect,
       });
@@ -217,18 +198,14 @@ attachmentsRouter.get("/api/attachments/:id/download", async (req: Request, res:
     return;
   }
 
-  let requesterId: number;
-  try {
-    requesterId = (await resolveRequester(req)).id;
-  } catch (error) {
-    handleRequesterError(error, res, "Unable to read the attachment");
-    return;
-  }
+  const user = currentUser(req);
 
   try {
-    // BR-38 — ownership is checked through the parent ticket.
+    // BR-38 — a Requester is limited to their own ticket; IT Staff and
+    // Administrators may download any attachment (Lab 3 authorization matrix).
+    const ownership = user.role === "REQUESTER" ? { ticket: { requesterId: user.id } } : {};
     const attachment = await getPrisma().attachment.findFirst({
-      where: { id: attachmentId, ticket: { requesterId } },
+      where: { id: attachmentId, ...ownership },
       select: {
         originalFilename: true,
         storedFilename: true,
@@ -260,7 +237,7 @@ attachmentsRouter.get("/api/attachments/:id/download", async (req: Request, res:
   }
 });
 
-attachmentsRouter.patch("/api/attachments/:id/remove", async (req: Request, res: Response) => {
+attachmentsRouter.patch("/api/attachments/:id/remove", requesterOnly, async (req: Request, res: Response) => {
   const prisma = getPrisma();
   const attachmentId = Number(req.params.id);
   if (!Number.isInteger(attachmentId)) {
@@ -268,13 +245,7 @@ attachmentsRouter.patch("/api/attachments/:id/remove", async (req: Request, res:
     return;
   }
 
-  let requesterId: number;
-  try {
-    requesterId = (await resolveRequester(req)).id;
-  } catch (error) {
-    handleRequesterError(error, res, "Unable to remove the attachment");
-    return;
-  }
+  const requesterId = currentUser(req).id;
 
   const { errors, value: reason } = validateRemovalReason((req.body ?? {}).reason);
   if (!reason) {
@@ -304,7 +275,7 @@ attachmentsRouter.patch("/api/attachments/:id/remove", async (req: Request, res:
       data: {
         removedAt: new Date(),
         removalReason: reason,
-        removedByRequesterId: requesterId,
+        removedByUserId: requesterId,
       },
       select: attachmentSelect,
     });

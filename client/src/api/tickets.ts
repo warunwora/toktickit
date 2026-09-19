@@ -1,7 +1,15 @@
 import { apiFetch } from "./client.js";
 
 export type Priority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-export type TicketStatus = "NEW";
+export type TicketStatus =
+  | "NEW"
+  | "OPEN"
+  | "IN_PROGRESS"
+  | "WAITING_FOR_REQUESTER"
+  | "RESOLVED"
+  | "CLOSED"
+  | "REOPENED"
+  | "CANCELLED";
 
 export interface TicketReference {
   id: number;
@@ -15,7 +23,11 @@ export interface Ticket {
   requestedPriority: Priority;
   summary: string;
   description: string;
+  itPriority: Priority;
   requester: TicketReference;
+  owner: TicketReference | null;
+  resolutionSummary: string | null;
+  requesterResolvedAt: string | null;
   category: TicketReference;
   relatedSystem: TicketReference;
   createdAt: string;
@@ -34,7 +46,6 @@ export interface CreateTicketPayload {
 export function createTicket(payload: CreateTicketPayload): Promise<Ticket> {
   return apiFetch<Ticket>("/api/tickets", {
     method: "POST",
-    withRequester: true,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
@@ -82,10 +93,9 @@ export function listTickets(params: TicketListParams): Promise<TicketListRespons
   }
   const suffix = query.toString();
   return apiFetch<TicketListResponse>(`/api/tickets${suffix ? `?${suffix}` : ""}`, {
-    withRequester: true,
   });
 }
 
 export function getTicket(id: number): Promise<Ticket> {
-  return apiFetch<Ticket>(`/api/tickets/${id}`, { withRequester: true });
+  return apiFetch<Ticket>(`/api/tickets/${id}`);
 }

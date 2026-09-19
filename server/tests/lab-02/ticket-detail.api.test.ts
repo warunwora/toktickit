@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
+import { cleanUpSessions, cookie, createSessionCookie, prepareCookies } from "../helpers/session.js";
 import { formatTicketNumber } from "../../src/lib/ticket-number.js";
 
 // API-15, API-16, API-17 — docs/lab-02/tests.md §2.2
@@ -30,6 +31,7 @@ async function makeTicket(requesterId: number, summary: string) {
       summary,
       description: "Seeded by the ticket-detail API test suite to verify ownership behaviour.",
       requestedPriority: "MEDIUM",
+      itPriority: "MEDIUM",
     },
     select: { id: true, createdAt: true },
   });
@@ -45,13 +47,16 @@ async function makeTicket(requesterId: number, summary: string) {
 }
 
 beforeAll(async () => {
-  const requesters = await prisma.requesterUser.findMany({
-    where: { isActive: true },
+  // Lab 3: the table now holds IT Staff and Administrators too, and these
+  // routes belong to the Requester role.
+  const requesters = await prisma.user.findMany({
+    where: { isActive: true, role: "REQUESTER" },
     orderBy: { id: "asc" },
     take: 2,
   });
   ownerId = requesters[0].id;
   otherId = requesters[1].id;
+  await prepareCookies(ownerId, otherId);
 
   ownedTicketId = await makeTicket(ownerId, "Detail test — owned ticket");
   foreignTicketId = await makeTicket(otherId, "Detail test — another requester's ticket");
@@ -59,6 +64,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await prisma.ticket.deleteMany({ where: { id: { in: createdIds } } });
+  await cleanUpSessions();
 });
 
 describe("GET /api/tickets/:id", () => {
@@ -66,7 +72,7 @@ describe("GET /api/tickets/:id", () => {
   it("returns the full ticket for its owner", async () => {
     const res = await request(app)
       .get(`/api/tickets/${ownedTicketId}`)
-      .set("X-Requester-Id", String(ownerId));
+      .set("Cookie", cookie(ownerId));
 
     expect(res.status).toBe(200);
     expect(res.body.id).toBe(ownedTicketId);
@@ -82,17 +88,17 @@ describe("GET /api/tickets/:id", () => {
   it("answers 404 for a ticket that belongs to another requester and leaks nothing", async () => {
     const res = await request(app)
       .get(`/api/tickets/${foreignTicketId}`)
-      .set("X-Requester-Id", String(ownerId));
+      .set("Cookie", cookie(ownerId));
 
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "Ticket not found" });
   });
 
   it("answers 404 the same way for a ticket that does not exist", async () => {
-    const missing = await request(app).get("/api/tickets/99999999").set("X-Requester-Id", String(ownerId));
+    const missing = await request(app).get("/api/tickets/99999999").set("Cookie", cookie(ownerId));
     const foreign = await request(app)
       .get(`/api/tickets/${foreignTicketId}`)
-      .set("X-Requester-Id", String(ownerId));
+      .set("Cookie", cookie(ownerId));
 
     expect(missing.status).toBe(foreign.status);
     expect(missing.body).toEqual(foreign.body);
@@ -100,16 +106,15 @@ describe("GET /api/tickets/:id", () => {
 
   // API-17 / api-spec §3.3
   it("rejects a non-integer id with 400", async () => {
-    const res = await request(app).get("/api/tickets/abc").set("X-Requester-Id", String(ownerId));
+    const res = await request(app).get("/api/tickets/abc").set("Cookie", cookie(ownerId));
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: "Invalid ticket id" });
   });
 
-  it("requires a Development Requester header", async () => {
+  it("requires an authenticated session", async () => {
     const res = await request(app).get(`/api/tickets/${ownedTicketId}`);
 
-    expect(res.status).toBe(400);
-    expect(res.body.field).toBe("X-Requester-Id");
+    expect(res.status).toBe(401);
   });
 });

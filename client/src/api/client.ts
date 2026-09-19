@@ -1,87 +1,75 @@
-// One place that talks to the API, so Lab 3 can swap the Development Requester
-// header for a real credential without touching any screen (BR-43).
+// One place that talks to the API. Lab 3 replaced the Development Requester
+// header with the session cookie, which the browser attaches itself as long as
+// every request opts into credentials (docs/lab-03/api-spec.md §1.1).
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
-export const REQUESTER_STORAGE_KEY = "toktickit.requesterId";
-
 export class ApiError extends Error {
   status: number;
+  code?: string;
   fields?: { field: string; message: string }[];
 
-  constructor(status: number, message: string, fields?: { field: string; message: string }[]) {
+  constructor(
+    status: number,
+    message: string,
+    options: { code?: string; fields?: { field: string; message: string }[] } = {}
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
-    this.fields = fields;
+    this.code = options.code;
+    this.fields = options.fields;
   }
 }
 
-export function getStoredRequesterId(): number | null {
-  const raw = window.localStorage.getItem(REQUESTER_STORAGE_KEY);
-  if (!raw) return null;
-  const id = Number(raw);
-  return Number.isInteger(id) && id > 0 ? id : null;
+/**
+ * Called whenever the API answers 401, so the session that the application
+ * believes in cannot outlive the session the server holds (AC-07).
+ */
+type UnauthorizedHandler = () => void;
+
+let onUnauthorized: UnauthorizedHandler | null = null;
+
+export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): void {
+  onUnauthorized = handler;
 }
 
-export function storeRequesterId(id: number): void {
-  window.localStorage.setItem(REQUESTER_STORAGE_KEY, String(id));
-}
+async function readError(response: Response, fallback: string): Promise<ApiError> {
+  let message = fallback;
+  let code: string | undefined;
+  let fields: { field: string; message: string }[] | undefined;
 
-export function clearStoredRequesterId(): void {
-  window.localStorage.removeItem(REQUESTER_STORAGE_KEY);
-}
-
-interface RequestOptions extends RequestInit {
-  /** Send the selected Development Requester as X-Requester-Id (BR-07). */
-  withRequester?: boolean;
-}
-
-export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { withRequester = false, headers, ...rest } = options;
-  const finalHeaders = new Headers(headers);
-
-  if (withRequester) {
-    const requesterId = getStoredRequesterId();
-    if (requesterId !== null) finalHeaders.set("X-Requester-Id", String(requesterId));
+  try {
+    const body = await response.json();
+    if (typeof body?.error === "string") message = body.error;
+    if (typeof body?.code === "string") code = body.code;
+    if (Array.isArray(body?.fields)) fields = body.fields;
+  } catch {
+    // A non-JSON error body is still a failure; keep the generic message.
   }
 
-  const response = await fetch(`${API_URL}${path}`, { ...rest, headers: finalHeaders });
+  return new ApiError(response.status, message, { code, fields });
+}
+
+export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, { ...options, credentials: "include" });
 
   if (!response.ok) {
-    let message = "Something went wrong. Please try again.";
-    let fields: { field: string; message: string }[] | undefined;
-    try {
-      const body = await response.json();
-      if (typeof body?.error === "string") message = body.error;
-      if (Array.isArray(body?.fields)) fields = body.fields;
-    } catch {
-      // A non-JSON error body is still a failure; keep the generic message.
-    }
-    throw new ApiError(response.status, message, fields);
+    if (response.status === 401) onUnauthorized?.();
+    throw await readError(response, "Something went wrong. Please try again.");
   }
 
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 
-/** Downloads need the identity header too, so a plain <a href> will not do. */
+/** Downloads carry the session cookie too, so a plain <a href> will not do. */
 export async function apiFetchBlob(path: string): Promise<{ blob: Blob; filename: string | null }> {
-  const headers = new Headers();
-  const requesterId = getStoredRequesterId();
-  if (requesterId !== null) headers.set("X-Requester-Id", String(requesterId));
-
-  const response = await fetch(`${API_URL}${path}`, { headers });
+  const response = await fetch(`${API_URL}${path}`, { credentials: "include" });
 
   if (!response.ok) {
-    let message = "Unable to download this file.";
-    try {
-      const body = await response.json();
-      if (typeof body?.error === "string") message = body.error;
-    } catch {
-      // Keep the generic message.
-    }
-    throw new ApiError(response.status, message);
+    if (response.status === 401) onUnauthorized?.();
+    throw await readError(response, "Unable to download this file.");
   }
 
   const disposition = response.headers.get("Content-Disposition") ?? "";

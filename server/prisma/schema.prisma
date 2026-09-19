@@ -1,7 +1,9 @@
 // Prisma schema — datasource and generator are pre-wired.
 // Your DATABASE_URL lives in server/.env (copy it from .env.example).
 //
-// The Lab 2 models follow docs/lab-02/specification.md §7 (Data Changes).
+// Lab 2 models follow docs/lab-02/specification.md §7.
+// Lab 3 models follow docs/lab-03/specification.md §7 (Data Changes): the
+// Development Requester becomes a real authenticated User with one role.
 
 generator client {
   provider = "prisma-client-js"
@@ -35,22 +37,56 @@ model RelatedSystem {
 }
 
 // ---------------------------------------------------------------------------
-// Development Requester — Lab 2 testing identity only (BR-05).
-// This is NOT authentication. Lab 3 replaces it with a real authenticated user.
+// Users and sessions — Lab 3.
+// This model is the Lab 2 RequesterUser table, renamed in place so every
+// Ticket and Attachment foreign key keeps pointing at the same person (BR-58,
+// decision D-06). A user has exactly one role (BR-23).
 // ---------------------------------------------------------------------------
 
-model RequesterUser {
-  id         Int      @id @default(autoincrement())
-  name       String
-  email      String   @unique
-  department String?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+enum RoleName {
+  REQUESTER
+  IT_STAFF
+  ADMINISTRATOR
+}
 
-  tickets             Ticket[]
-  uploadedAttachments Attachment[] @relation("AttachmentUploader")
-  removedAttachments  Attachment[] @relation("AttachmentRemover")
+model User {
+  id                 Int       @id @default(autoincrement())
+  name               String
+  email              String    @unique
+  passwordHash       String
+  role               RoleName  @default(REQUESTER)
+  department         String?
+  isActive           Boolean   @default(true)
+  mustChangePassword Boolean   @default(true)
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  tickets             Ticket[]        @relation("TicketRequester")
+  ownedTickets        Ticket[]        @relation("TicketOwner")
+  uploadedAttachments Attachment[]    @relation("AttachmentUploader")
+  removedAttachments  Attachment[]    @relation("AttachmentRemover")
+  sessions            Session[]
+  publicComments      PublicComment[]
+  internalNotes       InternalNote[]
+
+  // The Administrator user list filters by one role and sorts by name (BR-57).
+  @@index([role, name])
+}
+
+// Server-side sessions (decision D-01): logout and deactivation must take
+// effect immediately, which a stateless token cannot do.
+model Session {
+  id        String   @id
+  userId    Int
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  // Every authenticated request rejects an expired session (BR-07).
+  @@index([expiresAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -64,56 +100,113 @@ enum Priority {
   URGENT
 }
 
-// Single value in Lab 2 (BR-02). Lab 3 adds the rest of the lifecycle.
+// Lab 2 had NEW only. Lab 3 adds the operational lifecycle (BR-33); the
+// permitted transitions are in docs/lab-03/specification.md §5.1.
 enum TicketStatus {
   NEW
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_REQUESTER
+  RESOLVED
+  CLOSED
+  REOPENED
+  CANCELLED
 }
 
 model Ticket {
-  id                Int          @id @default(autoincrement())
-  ticketNumber      String       @unique
-  requesterId       Int
-  categoryId        Int
-  relatedSystemId   Int
-  summary           String
-  description       String
-  requestedPriority Priority
-  status            TicketStatus @default(NEW)
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  id                  Int          @id @default(autoincrement())
+  ticketNumber        String       @unique
+  requesterId         Int
+  ownerId             Int?
+  categoryId          Int
+  relatedSystemId     Int
+  summary             String
+  description         String
+  requestedPriority   Priority
+  itPriority          Priority
+  status              TicketStatus @default(NEW)
+  resolutionSummary   String?
+  requesterResolvedAt DateTime?
+  resolvedAt          DateTime?
+  closedAt            DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
-  requester     RequesterUser @relation(fields: [requesterId], references: [id], onDelete: Restrict)
-  category      Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  relatedSystem RelatedSystem @relation(fields: [relatedSystemId], references: [id], onDelete: Restrict)
-  attachments   Attachment[]
+  requester      User            @relation("TicketRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  owner          User?           @relation("TicketOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  category       Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  relatedSystem  RelatedSystem   @relation(fields: [relatedSystemId], references: [id], onDelete: Restrict)
+  attachments    Attachment[]
+  publicComments PublicComment[]
+  internalNotes  InternalNote[]
 
-  // My Tickets always filters by requester and sorts by createdAt desc (BR-14, BR-23).
+  // My Tickets always filters by requester and sorts by createdAt desc (BR-14, BR-23 of Lab 2).
   @@index([requesterId, createdAt])
   @@index([requesterId, status])
   @@index([requesterId, categoryId])
+  // The IT Staff queue: default view by status and age, "my work" by owner,
+  // and severity sorting (docs/lab-03/specification.md §7.3).
+  @@index([status, createdAt])
+  @@index([ownerId, status])
+  @@index([itPriority, createdAt])
 }
 
 // ---------------------------------------------------------------------------
-// Attachments — removal is always soft (BR-36). No row is ever deleted.
+// Attachments — removal is always soft (Lab 2 BR-36). No row is ever deleted.
+// The two uploader columns are renamed in Lab 3 because they now reference the
+// real User model rather than the Development Requester.
 // ---------------------------------------------------------------------------
 
 model Attachment {
-  id                    Int       @id @default(autoincrement())
-  ticketId              Int
-  originalFilename      String
-  storedFilename        String    @unique
-  mimeType              String
-  sizeBytes             Int
-  uploadedByRequesterId Int
-  uploadedAt            DateTime  @default(now())
-  removedAt             DateTime?
-  removalReason         String?
-  removedByRequesterId  Int?
+  id               Int       @id @default(autoincrement())
+  ticketId         Int
+  originalFilename String
+  storedFilename   String    @unique
+  mimeType         String
+  sizeBytes        Int
+  uploadedByUserId Int
+  uploadedAt       DateTime  @default(now())
+  removedAt        DateTime?
+  removalReason    String?
+  removedByUserId  Int?
 
-  ticket     Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  uploadedBy RequesterUser  @relation("AttachmentUploader", fields: [uploadedByRequesterId], references: [id], onDelete: Restrict)
-  removedBy  RequesterUser? @relation("AttachmentRemover", fields: [removedByRequesterId], references: [id], onDelete: Restrict)
+  ticket     Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedBy User   @relation("AttachmentUploader", fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+  removedBy  User?  @relation("AttachmentRemover", fields: [removedByUserId], references: [id], onDelete: Restrict)
 
-  // Active-attachment count (BR-33) and the detail screen both read by ticket + removal state.
+  // Active-attachment count and the detail screen both read by ticket + removal state.
   @@index([ticketId, removedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Ticket conversation — Lab 3.
+// Public Comments are shared with the Requester; Internal Notes are never
+// returned to one (BR-41, BR-42). Both are append-only (BR-43).
+// ---------------------------------------------------------------------------
+
+model PublicComment {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  authorId  Int
+  body      String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  // A thread is always read for one ticket, oldest first.
+  @@index([ticketId, createdAt])
+}
+
+model InternalNote {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  authorId  Int
+  body      String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId, createdAt])
 }
