@@ -6,7 +6,9 @@
 Repository: https://github.com/warunwora/toktickit
 Project board: https://github.com/users/warunwora/projects/1
 Branch flow: `feature/*` → `lab3-staging` → `main`. No commit was made directly on `main` or
-`lab3-staging`; every change reached them through a reviewed Pull Request.
+`lab3-staging`; every change reached them through a reviewed Pull Request. The release Pull Request
+is opened from `release/lab3`, which is `lab3-staging` plus the one documentation commit that records
+the PR #47 review — a review that could not exist until #47 had been merged.
 
 Sprint 3 was planned as eight Issues and one release before any code was written, and it shipped as
 exactly that. Lab 2 had ended with a tenth Pull Request opened to fix what the ninth had missed, so
@@ -26,11 +28,12 @@ evidence is captured, and the next Issue does not start until the current Pull R
 | [#44](https://github.com/warunwora/toktickit/pull/44) | [#36](https://github.com/warunwora/toktickit/issues/36) IT Staff Ticket Queue | `feature/lab3-5-staff-queue` | `lab3-staging` | Approved |
 | [#45](https://github.com/warunwora/toktickit/pull/45) | [#37](https://github.com/warunwora/toktickit/issues/37) Ticket Detail, ownership, priority, status, comments and notes | `feature/lab3-6-staff-ticket-ops` | `lab3-staging` | Approved |
 | [#46](https://github.com/warunwora/toktickit/pull/46) | [#38](https://github.com/warunwora/toktickit/issues/38) Administrator user management | `feature/lab3-7-user-admin` | `lab3-staging` | Approved |
-| [#47](https://github.com/warunwora/toktickit/pull/47) | [#39](https://github.com/warunwora/toktickit/issues/39) End-to-end tests, responsive evidence, final documentation | `feature/lab3-8-e2e-docs` | `lab3-staging` | Awaiting review |
-| #48 | — Lab 3 release | `lab3-staging` | `main` | Not yet opened |
+| [#47](https://github.com/warunwora/toktickit/pull/47) | [#39](https://github.com/warunwora/toktickit/issues/39) End-to-end tests, responsive evidence, final documentation | `feature/lab3-8-e2e-docs` | `lab3-staging` | Approved |
+| [#48](https://github.com/warunwora/toktickit/pull/48) | — Lab 3 release | `lab3-staging` | `main` | Awaiting review |
 
-The last two rows are completed and recorded here when their reviews arrive; this file is the
-sprint's review record, so nothing is written into it before it has happened.
+Nine Pull Requests, which is the number the sprint was planned with. The release row is completed
+here once its review arrives; this file is the sprint's review record, so nothing is written into it
+before it has happened.
 
 ### Comments I received, and how I responded
 
@@ -84,13 +87,15 @@ Administrator tries to deactivate themselves both safety rules apply, and the an
 account could do it.
 
 **PR #47 — End-to-end tests, responsive evidence and final documentation**
+> **@asamapornch:** e2e all pass, screenshot look good. docs complete. approve
 
-Awaiting review at the time of writing. The reviewer's comment and my response are added here before
-the release Pull Request is opened.
+My response: "thanks, lab2 e2e sign in now because selector gone" — the two Lab 2 specs were edited
+for exactly one reason, the removal of the Development Requester selector (BR-61). Every assertion
+they make about Lab 2 behaviour is untouched, which is what keeps them regression evidence (BR-62).
 
 **PR #48 — Lab 3 release into `main`**
 
-Not yet opened; it follows the approval of PR #47.
+Awaiting review at the time of writing.
 
 ---
 
