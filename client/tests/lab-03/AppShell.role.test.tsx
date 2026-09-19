@@ -69,6 +69,11 @@ describe("role-aware application shell", () => {
       expect(within(nav).getByRole("link", { name: "Ticket Queue" })).toBeInTheDocument();
       expect(within(nav).getByRole("link", { name: "Account" })).toBeInTheDocument();
 
+      // Only an Administrator is offered User Management (BR-24, D-10).
+      const users = within(nav).queryByRole("link", { name: "Users" });
+      if (user === ADMINISTRATOR) expect(users).toBeInTheDocument();
+      else expect(users).not.toBeInTheDocument();
+
       view.unmount();
       vi.restoreAllMocks();
     }

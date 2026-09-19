@@ -230,19 +230,25 @@ describe("POST /api/tickets/:id/problem-resolved", () => {
 
   // API-36 / AC-23
   it("is idempotent and keeps the first timestamp", async () => {
-    const first = await prisma.ticket.findUniqueOrThrow({
-      where: { id: ticketId },
-      select: { requesterResolvedAt: true },
-    });
-
-    const res = await request(app)
+    // Both calls happen inside this test, so the assertion never depends on
+    // state another test left behind.
+    const first = await request(app)
       .post(`/api/tickets/${ticketId}/problem-resolved`)
       .set("Cookie", cookie(requesterId));
 
-    expect(res.status).toBe(200);
-    expect(new Date(res.body.requesterResolvedAt).toISOString()).toBe(
-      first.requesterResolvedAt!.toISOString()
-    );
+    const second = await request(app)
+      .post(`/api/tickets/${ticketId}/problem-resolved`)
+      .set("Cookie", cookie(requesterId));
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(second.body.requesterResolvedAt).toBe(first.body.requesterResolvedAt);
+
+    const stored = await prisma.ticket.findUniqueOrThrow({
+      where: { id: ticketId },
+      select: { requesterResolvedAt: true },
+    });
+    expect(stored.requesterResolvedAt?.toISOString()).toBe(first.body.requesterResolvedAt);
   });
 
   // API-37 / AC-23
