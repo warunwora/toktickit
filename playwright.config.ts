@@ -1,11 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// Lab 2 end-to-end and responsive tests — docs/lab-02/tests.md §2.5.
+// End-to-end and responsive tests for every lab — docs/lab-02/tests.md §2.5 and
+// docs/lab-03/tests.md §2.11. The Lab 2 specs still run as regression evidence
+// (BR-62); they sign in now that the Development Requester selector is gone.
 // The API and the Vite dev server are started automatically; an already
 // running pair is reused so a developer can keep their own servers up.
 
 export default defineConfig({
-  testDir: "./e2e/lab-02",
+  testDir: "./e2e",
+  globalTeardown: "./e2e/global-teardown.ts",
   fullyParallel: false,
   workers: 1,
   reporter: [["list"], ["html", { open: "never" }]],
