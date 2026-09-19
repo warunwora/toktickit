@@ -1,7 +1,9 @@
 import { test, expect, Page } from "@playwright/test";
+import { ACCOUNTS, signInAs } from "../helpers/auth.js";
 
 // RESP-01, RESP-02, RESP-03 — docs/lab-02/tests.md §2.5, ui-spec.md §9 and §12.
-// Also captures the screenshot evidence for Part 9 of the submission.
+// Kept as Lab 3 regression evidence (BR-62); the Development Requester selector
+// it used to open with is gone, so it signs in instead (BR-61).
 
 const VIEWPORTS = [
   { name: "desktop", width: 1280, height: 800 },
@@ -9,8 +11,10 @@ const VIEWPORTS = [
   { name: "mobile", width: 390, height: 844 },
 ] as const;
 
-const SHOTS = "artifacts/lab-02/screenshots";
-const REQUESTER = "Napat Srisai";
+// Lab 2's own screenshots are its submitted evidence and stay as they were;
+// this spec now runs against the Lab 3 application, so its captures belong with
+// the Lab 3 regression evidence.
+const SHOTS = "artifacts/lab-03/screenshots/lab-02-regression";
 
 async function shot(page: Page, folder: string, name: string) {
   await page.screenshot({ path: `${SHOTS}/${folder}/${name}.png`, fullPage: true });
@@ -25,11 +29,7 @@ async function expectNoHorizontalScroll(page: Page) {
 }
 
 async function selectRequester(page: Page) {
-  await expect(page.getByText(/this is not a login screen/i)).toBeVisible();
-  const option = page.locator("option", { hasText: REQUESTER }).first();
-  await page.getByLabel(/Development Requester/).selectOption((await option.getAttribute("value"))!);
-  await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("heading", { name: "My Tickets" })).toBeVisible();
+  await signInAs(page, ACCOUNTS.requester.email, /My Tickets/);
 }
 
 for (const viewport of VIEWPORTS) {
@@ -37,11 +37,11 @@ for (const viewport of VIEWPORTS) {
     test.use({ viewport: { width: viewport.width, height: viewport.height } });
 
     test("renders every Lab 2 screen without clipping or horizontal scrolling", async ({ page }) => {
-      // Requester Selection
-      await page.goto("/tickets");
-      await expect(page.getByText(/this is not a login screen/i)).toBeVisible();
+      // Lab 3 opens on the login screen instead of the requester selector.
+      await page.goto("/login");
+      await expect(page.getByRole("heading", { name: "Sign in to your account" })).toBeVisible();
       await expectNoHorizontalScroll(page);
-      await shot(page, "requester-selection", `${viewport.name}-initial`);
+      await shot(page, "login", `${viewport.name}-initial`);
 
       await selectRequester(page);
 
