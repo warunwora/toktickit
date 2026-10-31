@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../api/client.js";
 import { ConversationEntry, postComment, postNote } from "../api/conversation.js";
 import {
   AssignableUser,
+  BlockingAction,
   StaffTicket,
   getAssignableUsers,
   getStaffTicket,
@@ -11,21 +12,29 @@ import {
   updateStaffTicket,
 } from "../api/staff.js";
 import { Attachment } from "../api/attachments.js";
+import { ActionTaken, listActions } from "../api/actions.js";
 import { Priority, TicketStatus } from "../api/tickets.js";
 import { CONFIRM_REQUIRED, STATUS_LABEL, allowedTransitions } from "../lib/transitions.js";
 import { PriorityBadge, StatusBadge } from "../components/Badges.js";
 import AttachmentSection from "../components/AttachmentSection.js";
 import ConversationThread from "../components/ConversationThread.js";
+import ActionsTaken from "../components/ActionsTaken.js";
 import { useAuth } from "../context/AuthContext.js";
 
 // IT Staff Ticket Detail — docs/lab-03/ui-spec.md §5.5, api-spec.md §6.2-§6.4.
 //
-// An Administrator reaches this screen to read it and to write Internal Notes,
-// but the operations panel is not theirs: claiming, prioritising and changing
-// status stay with IT Staff (BR-24, decision D-10).
+// Lab 4 (docs/lab-04/ui-spec.md §3, §5):
+// - Administrators operate the workflow exactly like IT Staff (BR-26), which
+//   replaces Lab 3 decision D-10.
+// - Every write sends the version on screen; a stale one is reported with a
+//   Reload action and the selections stay until then (BR-24).
+// - A refused resolution lists the actions that block it (BR-19, BR-20).
+// - The Actions Taken tab opens with ?tab=actions.
 
 type LoadState = "loading" | "ready" | "notFound" | "forbidden" | "failed";
-type Tab = "comments" | "notes" | "attachments";
+type Tab = "comments" | "notes" | "attachments" | "actions";
+
+const TABS: readonly Tab[] = ["comments", "notes", "attachments", "actions"];
 
 const PRIORITIES: Priority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
@@ -56,7 +65,9 @@ export default function StaffTicketDetail() {
   const { id } = useParams();
   const ticketId = Number(id);
   const { user } = useAuth();
-  const canOperate = user?.role === "IT_STAFF";
+  const canOperate = user?.role === "IT_STAFF" || user?.role === "ADMINISTRATOR";
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab") as Tab | null;
 
   const [state, setState] = useState<LoadState>("loading");
   const [ticket, setTicket] = useState<StaffTicket | null>(null);
@@ -66,7 +77,11 @@ export default function StaffTicketDetail() {
   const [comments, setComments] = useState<ConversationEntry[]>([]);
   const [notes, setNotes] = useState<ConversationEntry[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [tab, setTab] = useState<Tab>("comments");
+  const [tab, setTab] = useState<Tab>(requestedTab && TABS.includes(requestedTab) ? requestedTab : "comments");
+
+  const [actions, setActions] = useState<ActionTaken[]>([]);
+  const [actionsFailed, setActionsFailed] = useState(false);
+  const [actionsToken, setActionsToken] = useState(0);
 
   // The operations panel is a draft over the loaded ticket: nothing is sent
   // until Save, and a rejection restores every control (ui-spec.md §5.5).
@@ -80,8 +95,13 @@ export default function StaffTicketDetail() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState<TicketStatus | null>(null);
+  const [stale, setStale] = useState(false);
+  const [blocking, setBlocking] = useState<BlockingAction[]>([]);
 
   const summaryRef = useRef<HTMLTextAreaElement>(null);
+  // The version this screen's own action writes moved the ticket to, while
+  // the re-read is still in flight; a ticket save waits for it (BR-25).
+  const versionRefresh = useRef<Promise<number | null>>(Promise.resolve(null));
 
   function adopt(loaded: StaffTicket) {
     setTicket(loaded);
@@ -122,6 +142,24 @@ export default function StaffTicketDetail() {
   }, [ticketId, reloadToken]);
 
   useEffect(() => {
+    if (!Number.isInteger(ticketId)) return;
+    let cancelled = false;
+    listActions(ticketId)
+      .then((loaded) => {
+        if (cancelled) return;
+        setActions(loaded);
+        setActionsFailed(false);
+      })
+      .catch(() => {
+        if (!cancelled) setActionsFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticketId, actionsToken]);
+
+  // The Owner select and the action assignee select share one list (api-spec.md §4.2).
+  useEffect(() => {
     if (!canOperate) return;
     getAssignableUsers()
       .then(setAssignable)
@@ -153,58 +191,95 @@ export default function StaffTicketDetail() {
 
     setPendingConfirm(null);
     setSaving(true);
-    setFieldErrors({});
-    setSaveError(null);
-    setSaved(false);
+    clearFeedback();
 
     const ownerChanged = (ticket.owner?.id ?? "") !== ownerDraft;
     const priorityChanged = priorityDraft !== ticket.itPriority;
     const summaryChanged = summaryDraft.trim() !== (ticket.resolutionSummary ?? "");
 
-    try {
-      let latest = ticket;
+    if (!ownerChanged && !statusChanged && !priorityChanged && !summaryChanged) {
+      setSaving(false);
+      setSaveError("Nothing has changed yet.");
+      return;
+    }
 
+    // Each write answers with the next version, which the following write sends.
+    let latest = await withOwnVersion(ticket);
+
+    try {
       if (ownerChanged) {
-        latest = await updateOwner(ticket.id, ownerDraft === "" ? null : ownerDraft);
+        latest = { ...latest, ...(await updateOwner(ticket.id, latest.version, ownerDraft === "" ? null : ownerDraft)) };
       }
 
       if (statusChanged || priorityChanged || summaryChanged) {
-        latest = await updateStaffTicket(ticket.id, {
-          ...(priorityChanged ? { itPriority: priorityDraft } : {}),
-          ...(statusChanged ? { status: statusDraft } : {}),
-          ...(statusDraft === "RESOLVED" || summaryChanged ? { resolutionSummary: summaryDraft.trim() } : {}),
-        });
-      }
-
-      if (!ownerChanged && !statusChanged && !priorityChanged && !summaryChanged) {
-        setSaving(false);
-        setSaveError("Nothing has changed yet.");
-        return;
+        latest = {
+          ...latest,
+          ...(await updateStaffTicket(ticket.id, latest.version, {
+            ...(priorityChanged ? { itPriority: priorityDraft } : {}),
+            ...(statusChanged ? { status: statusDraft } : {}),
+            ...(statusDraft === "RESOLVED" || summaryChanged ? { resolutionSummary: summaryDraft.trim() } : {}),
+          })),
+        };
       }
 
       // The write responses carry the ticket without its threads, so the
       // conversation already on screen is kept.
-      setTicket({ ...ticket, ...latest });
-      setOwnerDraft(latest.owner?.id ?? "");
-      setPriorityDraft(latest.itPriority);
-      setStatusDraft(latest.status);
-      setSummaryDraft(latest.resolutionSummary ?? "");
+      adoptOperation(latest);
       setSaved(true);
     } catch (error) {
-      if (error instanceof ApiError && error.fields?.length) {
-        setFieldErrors(Object.fromEntries(error.fields.map((f) => [f.field, f.message])));
-      } else {
-        setSaveError("The ticket could not be updated. Please try again.");
-      }
+      // An owner change that went through before a later refusal is real.
+      if (latest !== ticket) setTicket(latest);
+      handleWriteError(error, "The ticket could not be updated. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
-      // Every control returns to the stored ticket, so the screen never shows a
-      // value the server refused (ui-spec.md §5.5).
+  function adoptOperation(latest: StaffTicket) {
+    setTicket(latest);
+    setOwnerDraft(latest.owner?.id ?? "");
+    setPriorityDraft(latest.itPriority);
+    setStatusDraft(latest.status);
+    setSummaryDraft(latest.resolutionSummary ?? "");
+  }
+
+  function clearFeedback() {
+    setFieldErrors({});
+    setSaveError(null);
+    setSaved(false);
+    setStale(false);
+    setBlocking([]);
+  }
+
+  /**
+   * ui-spec.md §5, §6. A stale save, a blocked resolution, a network failure
+   * and a 500 keep every selection, so nothing the person chose is lost
+   * (BR-40, AC-37). Only a 400 — the server refusing the values themselves —
+   * puts the controls back to the stored ticket, so the screen never shows a
+   * value the server refused (Lab 3 ui-spec.md §5.5).
+   */
+  function handleWriteError(error: unknown, fallback: string) {
+    if (error instanceof ApiError && error.code === "STALE_UPDATE") {
+      setStale(true);
+      return;
+    }
+
+    if (error instanceof ApiError && error.code === "RESOLUTION_BLOCKED") {
+      setBlocking((error.body?.blockingActions as BlockingAction[] | undefined) ?? []);
+      return;
+    }
+
+    if (error instanceof ApiError && error.fields?.length) {
+      setFieldErrors(Object.fromEntries(error.fields.map((f) => [f.field, f.message])));
+    } else {
+      setSaveError(fallback);
+    }
+
+    if (ticket && error instanceof ApiError && error.status === 400) {
       setOwnerDraft(ticket.owner?.id ?? "");
       setPriorityDraft(ticket.itPriority);
       setStatusDraft(ticket.status);
       setSummaryDraft(ticket.resolutionSummary ?? "");
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -212,20 +287,57 @@ export default function StaffTicketDetail() {
     if (!ticket || !user) return;
     setOwnerDraft(user.id);
     setSaving(true);
-    setSaveError(null);
-    setSaved(false);
+    clearFeedback();
 
     try {
-      const latest = await updateOwner(ticket.id, user.id);
+      const base = await withOwnVersion(ticket);
+      const latest = await updateOwner(ticket.id, base.version, user.id);
       setTicket({ ...ticket, ...latest });
       setOwnerDraft(latest.owner?.id ?? "");
       setSaved(true);
-    } catch {
+    } catch (error) {
+      handleWriteError(error, "The ticket could not be claimed. Please try again.");
       setOwnerDraft(ticket.owner?.id ?? "");
-      setSaveError("The ticket could not be claimed. Please try again.");
     } finally {
       setSaving(false);
     }
+  }
+
+  function reloadLatest() {
+    clearFeedback();
+    setReloadToken((t) => t + 1);
+    setActionsToken((t) => t + 1);
+  }
+
+  /**
+   * Adding, completing or clearing an action raises the ticket's version
+   * (BR-25). This screen made that change itself, so it takes the new version
+   * quietly instead of reporting its own write as someone else's.
+   */
+  function actionsChanged(next: ActionTaken[]) {
+    setActions(next);
+    versionRefresh.current = getStaffTicket(ticketId)
+      .then((fresh) => {
+        setTicket((current) =>
+          current ? { ...current, version: fresh.version, updatedAt: fresh.updatedAt } : current
+        );
+        return fresh.version;
+      })
+      .catch(() => null);
+  }
+
+  /**
+   * A Save pressed right after an action write must not race the re-read and
+   * report the screen's own change as someone else's, so it waits for it.
+   */
+  async function withOwnVersion(current: StaffTicket): Promise<StaffTicket> {
+    const refreshed = await versionRefresh.current;
+    return refreshed !== null && refreshed > current.version ? { ...current, version: refreshed } : current;
+  }
+
+  function showAction(actionId: number) {
+    setTab("actions");
+    requestAnimationFrame(() => document.getElementById(`action-${actionId}`)?.scrollIntoView?.({ block: "center" }));
   }
 
   if (state === "loading") {
@@ -331,13 +443,6 @@ export default function StaffTicketDetail() {
 
       <section className="zg-card zg-operations" aria-label="Ticket operations">
         <h2 className="zg-section-title">Operations</h2>
-
-        {canOperate ? null : (
-          <p className="zg-muted">
-            Ownership, IT Priority and Status are handled by IT Staff. You can still read this ticket and
-            add an Internal Note.
-          </p>
-        )}
 
         <div className="row g-3">
           <div className="col-12 col-lg-4 zg-field">
@@ -459,6 +564,37 @@ export default function StaffTicketDetail() {
           </div>
         ) : null}
 
+        {stale ? (
+          <div className="zg-callout zg-callout-warning" role="alert">
+            <span>This ticket was changed by someone else.</span>
+            <button type="button" className="zg-btn zg-btn-secondary ms-2" onClick={reloadLatest}>
+              Reload latest
+            </button>
+          </div>
+        ) : null}
+
+        {blocking.length > 0 ? (
+          <div className="zg-callout zg-callout-error" role="alert">
+            <p className="mb-2">This ticket cannot be resolved yet.</p>
+            <ul className="zg-blocking-list mb-0">
+              {blocking.map((action) => (
+                <li key={action.id}>
+                  <a
+                    href={`?tab=actions#action-${action.id}`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      showAction(action.id);
+                    }}
+                  >
+                    {action.description}
+                  </a>{" "}
+                  — {action.reason === "FOLLOW_UP_OPEN" ? "follow-up open" : "incomplete"}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
         {saved ? (
           <div className="zg-callout zg-callout-success" role="status">
             The ticket has been updated.
@@ -507,6 +643,7 @@ export default function StaffTicketDetail() {
             ["comments", `Public Comments (${comments.length})`],
             ["notes", `Internal Notes (${notes.length})`],
             ["attachments", `Attachments (${attachments.length})`],
+            ["actions", `Actions Taken (${actions.length})`],
           ] as [Tab, string][]
         ).map(([value, label]) => (
           <button
@@ -549,6 +686,22 @@ export default function StaffTicketDetail() {
         hidden={tab !== "attachments"}
       >
         <AttachmentSection ticketId={ticket.id} attachments={attachments} onChange={setAttachments} readOnly />
+      </div>
+
+      <div role="tabpanel" id="panel-actions" aria-labelledby="tab-actions" hidden={tab !== "actions"}>
+        <ActionsTaken
+          ticketId={ticket.id}
+          ticketCreatedAt={ticket.createdAt}
+          ownerId={ticket.owner?.id ?? null}
+          locked={ticket.status === "CLOSED" || ticket.status === "CANCELLED"}
+          actions={actions}
+          loadFailed={actionsFailed}
+          onReload={() => setActionsToken((t) => t + 1)}
+          onChange={actionsChanged}
+          readOnly={!canOperate}
+          assignable={assignable}
+          currentUser={user ?? undefined}
+        />
       </div>
     </main>
   );

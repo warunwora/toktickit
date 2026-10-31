@@ -4,6 +4,8 @@ import { requireRole } from "../lib/auth.js";
 import { parseStaffQueueQuery, staffQueueOrderBy, staffQueueWhere } from "../lib/staff-query.js";
 import { serializeAttachment } from "./attachments.js";
 import { FieldError, PRIORITIES, PriorityValue } from "../lib/validation.js";
+import { parseVersion } from "../lib/action-rules.js";
+import { resolutionBlockers } from "../lib/resolution-gate.js";
 import {
   RESOLUTION_SUMMARY_MAX,
   TicketStatusValue,
@@ -12,8 +14,8 @@ import {
 } from "../lib/transitions.js";
 
 // IT Staff queue and ticket retrieval — docs/lab-03/api-spec.md §6.1, §6.2.
-// Reading is open to IT Staff and Administrators; the write operations that
-// arrive with Issue 6 are IT Staff only (decision D-10).
+// Reading and writing are open to IT Staff and Administrators: Lab 4 BR-26
+// (handout §4.3) replaces the Lab 3 rule that writes were IT Staff only.
 
 export const staffRouter = Router();
 
@@ -86,6 +88,7 @@ staffRouter.get("/api/staff/tickets/:id", staffRead, async (req: Request, res: R
         resolutionSummary: true,
         resolvedAt: true,
         closedAt: true,
+        version: true,
         relatedSystem: { select: { id: true, name: true } },
         attachments: {
           orderBy: { id: "asc" },
@@ -132,23 +135,24 @@ staffRouter.get("/api/staff/tickets/:id", staffRead, async (req: Request, res: R
 
 // --- Ticket operations — api-spec.md §6.3-§6.5 ------------------------------
 //
-// Writing the workflow is IT Staff only: an Administrator reads the queue and
-// writes Internal Notes, but does not claim, prioritise or change status
-// (BR-24, decision D-10). That is why these routes use their own gate.
+// Lab 4 BR-26 — Administrators perform IT Staff behaviour: they claim, own,
+// prioritise and change status too. This replaces Lab 3 decision D-10.
 
-const staffWrite = requireRole("IT_STAFF");
+const staffWrite = requireRole("IT_STAFF", "ADMINISTRATOR");
 
 /**
- * The people a ticket may be assigned to (BR-26). The Owner select needs this
+ * The people a ticket or an action may be assigned to: active IT Staff and
+ * Administrators (Lab 4 BR-04, BR-27). The Owner select needs this
  * list and the Administrator user endpoints are closed to IT Staff, so the
- * queue serves its own narrow, non-sensitive projection: id and name only.
+ * queue serves its own narrow, non-sensitive projection: id, name and role.
  */
 staffRouter.get("/api/staff/assignable-users", staffRead, async (_req: Request, res: Response) => {
   try {
     const users = await getPrisma().user.findMany({
-      where: { role: "IT_STAFF", isActive: true },
+      where: { role: { in: ["IT_STAFF", "ADMINISTRATOR"] }, isActive: true },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      // api-spec.md §4.2 — the role lets both selects tell an Administrator apart.
+      select: { id: true, name: true, role: true },
     });
     res.status(200).json({ users });
   } catch {
@@ -163,8 +167,35 @@ const operationSelect = {
   resolutionSummary: true,
   resolvedAt: true,
   closedAt: true,
+  version: true,
   relatedSystem: { select: { id: true, name: true } },
 } as const;
+
+// --- Lab 4: stale updates and the resolution gate — api-spec.md §1.2, §4.1 ---
+//
+// Every ticket write carries the version the user last saw (BR-24, D-04). The
+// write is one `UPDATE … WHERE id AND version` statement (DB-2), so the check
+// and the change cannot be separated by another request.
+
+const VERSION_ERROR: FieldError = { field: "version", message: "The version you last saw is required" };
+
+async function staleTicket(res: Response, ticketId: number): Promise<void> {
+  const current = await getPrisma().ticket.findUnique({ where: { id: ticketId }, select: operationSelect });
+  res.status(409).json({
+    error: "This ticket was changed by someone else. Reload to see the latest version.",
+    code: "STALE_UPDATE",
+    current,
+  });
+}
+
+/** Writes `data` only if the version still matches; false means stale. */
+async function writeIfCurrent(ticketId: number, version: number, data: Record<string, unknown>): Promise<boolean> {
+  const { count } = await getPrisma().ticket.updateMany({
+    where: { id: ticketId, version },
+    data: { ...data, version: { increment: 1 } },
+  });
+  return count === 1;
+}
 
 staffRouter.patch("/api/staff/tickets/:id/owner", staffWrite, async (req: Request, res: Response) => {
   const ticketId = Number(req.params.id);
@@ -175,21 +206,25 @@ staffRouter.patch("/api/staff/tickets/:id/owner", staffWrite, async (req: Reques
 
   const raw = (req.body ?? {}).ownerId;
   const releasing = raw === null;
-
-  if (!releasing && (typeof raw !== "number" || !Number.isInteger(raw) || raw <= 0)) {
-    res.status(400).json({
-      error: "Validation failed",
-      fields: [{ field: "ownerId", message: "Select an active IT Staff user, or release the ticket" }],
-    });
-    return;
-  }
+  const version = parseVersion((req.body ?? {}).version);
 
   try {
     const prisma = getPrisma();
 
+    // api-spec.md §4.1 order: ticket exists (404) → validation (400) → version (409).
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }, select: { id: true } });
     if (!ticket) {
       res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+
+    const fields: FieldError[] = [];
+    if (!releasing && (typeof raw !== "number" || !Number.isInteger(raw) || raw <= 0)) {
+      fields.push({ field: "ownerId", message: "Select an active IT Staff or Administrator user, or release the ticket" });
+    }
+    if (version === null) fields.push(VERSION_ERROR);
+    if (fields.length > 0) {
+      res.status(400).json({ error: "Validation failed", fields });
       return;
     }
 
@@ -197,26 +232,25 @@ staffRouter.patch("/api/staff/tickets/:id/owner", staffWrite, async (req: Reques
       // BR-29 / BR-26 — an inactive user, a Requester and an unknown id are one
       // failure to the person assigning: this is not a valid owner.
       const owner = await prisma.user.findFirst({
-        where: { id: raw as number, role: "IT_STAFF", isActive: true },
+        where: { id: raw as number, role: { in: ["IT_STAFF", "ADMINISTRATOR"] }, isActive: true },
         select: { id: true },
       });
 
       if (!owner) {
         res.status(400).json({
           error: "Validation failed",
-          fields: [{ field: "ownerId", message: "Select an active IT Staff user" }],
+          fields: [{ field: "ownerId", message: "Select an active IT Staff or Administrator user" }],
         });
         return;
       }
     }
 
-    const updated = await prisma.ticket.update({
-      where: { id: ticketId },
-      data: { ownerId: releasing ? null : (raw as number) },
-      select: operationSelect,
-    });
+    if (!(await writeIfCurrent(ticketId, version!, { ownerId: releasing ? null : (raw as number) }))) {
+      await staleTicket(res, ticketId);
+      return;
+    }
 
-    res.status(200).json(updated);
+    res.status(200).json(await prisma.ticket.findUnique({ where: { id: ticketId }, select: operationSelect }));
   } catch {
     res.status(500).json({ error: "Unable to update the ticket owner" });
   }
@@ -233,36 +267,48 @@ staffRouter.patch("/api/staff/tickets/:id", staffWrite, async (req: Request, res
   const wantsPriority = body.itPriority !== undefined;
   const wantsStatus = body.status !== undefined;
   const wantsSummary = body.resolutionSummary !== undefined;
-
-  if (!wantsPriority && !wantsStatus && !wantsSummary) {
-    res.status(400).json({ error: "Nothing to update" });
-    return;
-  }
-
-  const errors: FieldError[] = [];
-
-  if (wantsPriority && !PRIORITIES.includes(body.itPriority as PriorityValue)) {
-    errors.push({ field: "itPriority", message: `IT Priority must be one of ${PRIORITIES.join(", ")}` });
-  }
-
-  if (wantsStatus && !isStatus(body.status)) {
-    errors.push({ field: "status", message: "Status is not a known ticket status" });
-  }
-
-  if (errors.length > 0) {
-    res.status(400).json({ error: "Validation failed", fields: errors });
-    return;
-  }
+  const version = parseVersion(body.version);
 
   try {
     const prisma = getPrisma();
     const current = await prisma.ticket.findUnique({
       where: { id: ticketId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, version: true },
     });
 
+    // api-spec.md §4.1 order: 404 → validation 400 → version 409 → transition
+    // 400 → resolution gate 409.
     if (!current) {
       res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+
+    if (!wantsPriority && !wantsStatus && !wantsSummary) {
+      res.status(400).json({ error: "Nothing to update" });
+      return;
+    }
+
+    const errors: FieldError[] = [];
+
+    if (wantsPriority && !PRIORITIES.includes(body.itPriority as PriorityValue)) {
+      errors.push({ field: "itPriority", message: `IT Priority must be one of ${PRIORITIES.join(", ")}` });
+    }
+
+    if (wantsStatus && !isStatus(body.status)) {
+      errors.push({ field: "status", message: "Status is not a known ticket status" });
+    }
+
+    if (version === null) errors.push(VERSION_ERROR);
+
+    if (errors.length > 0) {
+      res.status(400).json({ error: "Validation failed", fields: errors });
+      return;
+    }
+
+    // The version is checked before any decision about the ticket's state, so
+    // nobody sees a gate verdict made against data they have not seen.
+    if (current.version !== version) {
+      await staleTicket(res, ticketId);
       return;
     }
 
@@ -279,6 +325,25 @@ staffRouter.patch("/api/staff/tickets/:id", staffWrite, async (req: Request, res
         // including any priority sent in the same request.
         res.status(400).json({ error: "Validation failed", code: "INVALID_TRANSITION", fields: check.errors });
         return;
+      }
+
+      // BR-19 — enforced here on every request, whatever the client sent.
+      if (target === "RESOLVED") {
+        const blockingActions = resolutionBlockers(
+          await prisma.actionTaken.findMany({
+            where: { ticketId },
+            orderBy: [{ actionAt: "asc" }, { id: "asc" }],
+            select: { id: true, description: true, status: true, followUpRequired: true, followUpClearedAt: true },
+          })
+        );
+        if (blockingActions.length > 0) {
+          res.status(409).json({
+            error: "This ticket still has incomplete Actions Taken.",
+            code: "RESOLUTION_BLOCKED",
+            blockingActions,
+          });
+          return;
+        }
       }
 
       data.status = target;
@@ -306,13 +371,14 @@ staffRouter.patch("/api/staff/tickets/:id", staffWrite, async (req: Request, res
       data.resolutionSummary = summary === "" ? null : summary;
     }
 
-    const updated = await prisma.ticket.update({
-      where: { id: ticketId },
-      data,
-      select: operationSelect,
-    });
+    // An action added or completed since the gate read bumps the version
+    // (BR-25), so this write then fails as stale instead of slipping past it.
+    if (!(await writeIfCurrent(ticketId, version!, data))) {
+      await staleTicket(res, ticketId);
+      return;
+    }
 
-    res.status(200).json(updated);
+    res.status(200).json(await prisma.ticket.findUnique({ where: { id: ticketId }, select: operationSelect }));
   } catch {
     res.status(500).json({ error: "Unable to update the ticket" });
   }

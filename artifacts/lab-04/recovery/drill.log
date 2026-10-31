@@ -1,0 +1,34 @@
+# 2026-10-31T04:15:39Z — bash prisma/recovery/drill.sh
+
+== 1. Back up the database with pg_dump (custom format)
+-rw-r--r-- 1 root root 69331 Oct 31 04:15 /tmp/toktickit_before_lab4_down.dump
+
+== 2. Restore the backup into a throwaway copy and record the starting point
+NOTICE:  database "toktickit_drill" does not exist, skipping
+users=10 tickets=42 attachments=6 comments=12 notes=11
+actionTaken table=true ticket.version column=true lab4 migration recorded=true
+lab3 fingerprint=90cd142112353c9305197d5277c0f533
+actions=11
+
+== 3. Reverse the Lab 4 migration with prisma/recovery/lab4_down.sql
+users=10 tickets=42 attachments=6 comments=12 notes=11
+actionTaken table=false ticket.version column=false lab4 migration recorded=false
+lab3 fingerprint=90cd142112353c9305197d5277c0f533
+
+== 4. Re-apply the Lab 4 migration with prisma migrate deploy
+Applying migration `20261031090000_lab4_actions_taken`
+The following migration(s) have been applied:
+All migrations have been successfully applied.
+users=10 tickets=42 attachments=6 comments=12 notes=11
+actionTaken table=true ticket.version column=true lab4 migration recorded=true
+lab3 fingerprint=90cd142112353c9305197d5277c0f533
+tickets below version 1=0
+
+== 5. Full restore from the pg_dump backup
+users=10 tickets=42 attachments=6 comments=12 notes=11
+actionTaken table=true ticket.version column=true lab4 migration recorded=true
+lab3 fingerprint=90cd142112353c9305197d5277c0f533
+actions=11
+
+== 6. Clean up
+drill database dropped; development database untouched

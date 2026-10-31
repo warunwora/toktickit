@@ -78,6 +78,8 @@ export interface TicketListParams {
   relatedSystemId?: string;
   requestedPriority?: string;
   status?: string;
+  /** Lab 4 api-spec.md §5.4 — "active" means the five active statuses. */
+  statusGroup?: string;
   sort?: string;
   order?: string;
   page?: number;

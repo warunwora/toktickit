@@ -50,7 +50,8 @@ test("a new account must change its initial password before anything else opens"
   await page.getByLabel(/Confirm new password/).fill("Fresh#2026");
   await page.getByRole("button", { name: "Continue" }).click();
 
-  await expect(page.getByRole("heading", { name: /My Tickets/ })).toBeVisible();
+  // Lab 4 AC-34 — the application now opens on the Requester's dashboard.
+  await expect(page.getByRole("heading", { name: /^Welcome back/ })).toBeVisible();
 });
 
 // E2E-03 / AC-03

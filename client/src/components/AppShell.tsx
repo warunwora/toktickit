@@ -14,17 +14,21 @@ interface NavItem {
   end?: boolean;
 }
 
+// Lab 4 ui-spec.md §1 — the Dashboard comes first for every role.
 const NAVIGATION: Record<RoleName, NavItem[]> = {
   REQUESTER: [
+    { to: "/dashboard", label: "Dashboard" },
     { to: "/tickets", label: "My Tickets", end: true },
     { to: "/tickets/new", label: "Create Ticket" },
     { to: "/account", label: "Account" },
   ],
   IT_STAFF: [
+    { to: "/staff/dashboard", label: "Dashboard" },
     { to: "/staff/queue", label: "Ticket Queue" },
     { to: "/account", label: "Account" },
   ],
   ADMINISTRATOR: [
+    { to: "/staff/dashboard", label: "Dashboard" },
     { to: "/staff/queue", label: "Ticket Queue" },
     { to: "/admin/users", label: "Users" },
     { to: "/account", label: "Account" },

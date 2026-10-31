@@ -90,6 +90,9 @@ for (const viewport of VIEWPORTS) {
       await checkPage(page, "staff-queue", `${viewport.name}-list`);
 
       // Below 768 px the table is replaced by one card per ticket (ui-spec §6).
+      // Wait for the queue to finish loading first: reading visibility while
+      // "Loading tickets…" is still shown made this check flaky.
+      await expect(page.locator(".zg-result-count")).toBeVisible();
       const tableVisible = await page.locator("table.zg-table").first().isVisible();
       const cardsVisible = await page.locator(".zg-queue-cards").first().isVisible();
       expect(tableVisible).toBe(viewport.width >= 768);

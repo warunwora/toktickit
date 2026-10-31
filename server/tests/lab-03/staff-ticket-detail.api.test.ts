@@ -49,11 +49,25 @@ async function makeTicket(options: { status?: TicketStatusValue; ownerId?: numbe
   return draft.id;
 }
 
-const patchOwner = (id: number, body: object, userId = staffId) =>
-  request(app).patch(`/api/staff/tickets/${id}/owner`).set("Cookie", cookie(userId)).send(body);
+// Lab 4 BR-24 made `version` required on both writes. These Lab 3 helpers send
+// the stored one, so every Lab 3 assertion keeps testing what it tested before;
+// the stale-version cases live in tests/lab-04/ticket-workflow.api.test.ts.
+async function currentVersion(id: number): Promise<number | undefined> {
+  const ticket = await prisma.ticket.findUnique({ where: { id }, select: { version: true } });
+  return ticket?.version;
+}
 
-const patchTicket = (id: number, body: object, userId = staffId) =>
-  request(app).patch(`/api/staff/tickets/${id}`).set("Cookie", cookie(userId)).send(body);
+const patchOwner = async (id: number, body: object, userId = staffId) =>
+  request(app)
+    .patch(`/api/staff/tickets/${id}/owner`)
+    .set("Cookie", cookie(userId))
+    .send({ version: await currentVersion(id), ...body });
+
+const patchTicket = async (id: number, body: object, userId = staffId) =>
+  request(app)
+    .patch(`/api/staff/tickets/${id}`)
+    .set("Cookie", cookie(userId))
+    .send({ version: await currentVersion(id), ...body });
 
 beforeAll(async () => {
   const [staff, otherStaff, admin, requester, category, relatedSystem] = await Promise.all([
@@ -134,7 +148,10 @@ describe("PATCH /api/staff/tickets/:id/owner", () => {
     for (const ownerId of [inactiveStaffId, requesterId, 99_999_999]) {
       const res = await patchOwner(id, { ownerId });
       expect(res.status, `ownerId ${ownerId}`).toBe(400);
-      expect(res.body.fields).toEqual([{ field: "ownerId", message: "Select an active IT Staff user" }]);
+      // Lab 4 BR-27 widened the owner to Administrators, so the message names both.
+      expect(res.body.fields).toEqual([
+        { field: "ownerId", message: "Select an active IT Staff or Administrator user" },
+      ]);
     }
 
     const after = await prisma.ticket.findUniqueOrThrow({ where: { id }, select: { ownerId: true } });
@@ -149,10 +166,12 @@ describe("PATCH /api/staff/tickets/:id/owner", () => {
     expect((await patchOwner(99_999_999, { ownerId: staffId })).status).toBe(404);
   });
 
-  it("is refused to an Administrator and to a Requester", async () => {
+  // Lab 4 BR-26 reverses Lab 3 D-10: an Administrator performs IT Staff
+  // behaviour, so only the Requester is still refused.
+  it("is allowed to an Administrator and refused to a Requester", async () => {
     const id = await makeTicket();
 
-    expect((await patchOwner(id, { ownerId: staffId }, adminId)).status).toBe(403);
+    expect((await patchOwner(id, { ownerId: adminId }, adminId)).status).toBe(200);
     expect((await patchOwner(id, { ownerId: staffId }, requesterId)).status).toBe(403);
   });
 });
@@ -279,17 +298,19 @@ describe("PATCH /api/staff/tickets/:id", () => {
     expect(res.body.error).toBe("Nothing to update");
   });
 
-  it("answers 404 for an unknown ticket and 403 for the other two roles", async () => {
+  // Lab 4 BR-26 — the Administrator case changed from 403 to 200.
+  it("answers 404 for an unknown ticket, 200 for an Administrator and 403 for a Requester", async () => {
     const id = await makeTicket();
 
     expect((await patchTicket(99_999_999, { itPriority: "LOW" })).status).toBe(404);
-    expect((await patchTicket(id, { itPriority: "LOW" }, adminId)).status).toBe(403);
+    expect((await patchTicket(id, { itPriority: "LOW" }, adminId)).status).toBe(200);
     expect((await patchTicket(id, { itPriority: "LOW" }, requesterId)).status).toBe(403);
   });
 });
 
 describe("GET /api/staff/assignable-users", () => {
-  it("lists active IT Staff by name and hides everyone else", async () => {
+  // Lab 4 BR-04, BR-27 — Administrators are assignable too.
+  it("lists active IT Staff and Administrators by name and hides everyone else", async () => {
     const res = await request(app).get("/api/staff/assignable-users").set("Cookie", cookie(staffId));
 
     expect(res.status).toBe(200);
@@ -297,11 +318,12 @@ describe("GET /api/staff/assignable-users", () => {
     expect(ids).toContain(staffId);
     expect(ids).not.toContain(inactiveStaffId);
     expect(ids).not.toContain(requesterId);
-    expect(ids).not.toContain(adminId);
+    expect(ids).toContain(adminId);
 
     const names = res.body.users.map((user: { name: string }) => user.name);
     expect([...names].sort()).toEqual(names);
-    expect(Object.keys(res.body.users[0]).sort()).toEqual(["id", "name"]);
+    // Lab 4 api-spec.md §4.2 added the role.
+    expect(Object.keys(res.body.users[0]).sort()).toEqual(["id", "name", "role"]);
   });
 
   it("is refused to a Requester", async () => {

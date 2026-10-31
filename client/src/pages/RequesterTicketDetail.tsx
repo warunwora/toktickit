@@ -3,16 +3,19 @@ import { Link, useParams } from "react-router-dom";
 import { ApiError } from "../api/client.js";
 import { getTicket, Ticket } from "../api/tickets.js";
 import { Attachment } from "../api/attachments.js";
+import { ActionTaken, listActions } from "../api/actions.js";
 import { ConversationEntry, getComments, markProblemResolved, postComment } from "../api/conversation.js";
 import { PriorityBadge, StatusBadge } from "../components/Badges.js";
 import AttachmentSection from "../components/AttachmentSection.js";
 import ConversationThread from "../components/ConversationThread.js";
+import ActionsTaken from "../components/ActionsTaken.js";
 
 // Requester Ticket Detail (view mode) — docs/lab-02/ui-spec.md §7.5, extended
 // by docs/lab-03/ui-spec.md §5.3. Every ticket field stays read-only (BR-04,
 // AC-25); what the Requester gains is a voice: a Public Comment thread and a
 // way to say the problem appears resolved. Internal Notes do not exist on this
-// screen in any form (AC-14).
+// screen in any form (AC-14). Lab 4 adds a read-only Actions Taken list after
+// the attachments (docs/lab-04/ui-spec.md §4, BR-17).
 
 type LoadState = "loading" | "ready" | "notFound" | "failed";
 
@@ -38,6 +41,9 @@ export default function RequesterTicketDetail() {
   const [reloadToken, setReloadToken] = useState(0);
 
   const [comments, setComments] = useState<ConversationEntry[]>([]);
+  const [actions, setActions] = useState<ActionTaken[]>([]);
+  const [actionsFailed, setActionsFailed] = useState(false);
+  const [actionsToken, setActionsToken] = useState(0);
   const [resolvedAt, setResolvedAt] = useState<string | null>(null);
   const [confirmingResolved, setConfirmingResolved] = useState(false);
   const [markingResolved, setMarkingResolved] = useState(false);
@@ -80,6 +86,24 @@ export default function RequesterTicketDetail() {
       cancelled = true;
     };
   }, [ticketId, reloadToken]);
+
+  // A second request, so an Actions Taken failure never hides the ticket.
+  useEffect(() => {
+    if (!Number.isInteger(ticketId)) return;
+    let cancelled = false;
+    listActions(ticketId)
+      .then((loaded) => {
+        if (cancelled) return;
+        setActions(loaded);
+        setActionsFailed(false);
+      })
+      .catch(() => {
+        if (!cancelled) setActionsFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticketId, actionsToken]);
 
   if (state === "loading") {
     return (
@@ -245,6 +269,18 @@ export default function RequesterTicketDetail() {
       </section>
 
       <AttachmentSection ticketId={ticket.id} attachments={attachments} onChange={setAttachments} />
+
+      <ActionsTaken
+        ticketId={ticket.id}
+        ticketCreatedAt={ticket.createdAt}
+        ownerId={null}
+        locked
+        actions={actions}
+        loadFailed={actionsFailed}
+        onReload={() => setActionsToken((t) => t + 1)}
+        onChange={setActions}
+        readOnly
+      />
 
       <ConversationThread
         variant="comment"

@@ -81,8 +81,8 @@ test("a user created here signs in and is forced through the password change", a
   await page.getByLabel(/Confirm new password/).fill("Fresh#2026");
   await page.getByRole("button", { name: "Continue" }).click();
 
-  // IT Staff land on the queue, which is their role's screen.
-  await expect(page.getByRole("heading", { name: "Ticket Queue" })).toBeVisible();
+  // IT Staff land on their dashboard (Lab 4 AC-34; it was the queue in Lab 3).
+  await expect(page.getByRole("heading", { name: /^Welcome back/ })).toBeVisible();
 });
 
 // E2E-14 / AC-43
@@ -187,13 +187,15 @@ test("a new initial password is demanded at that user's next sign-in", async ({ 
 test("a Requester cannot reach a staff URL or an administration URL", async ({ page }) => {
   await signInAs(page, ACCOUNTS.requester.email, /My Tickets/);
 
+  // The guard sends a Requester to their own landing screen, which is the
+  // dashboard since Lab 4 (AC-34).
   await page.goto("/staff/queue");
   await expect(page.getByRole("heading", { name: "Ticket Queue" })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "My Tickets" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Welcome back/ })).toBeVisible();
 
   await page.goto("/admin/users");
   await expect(page.getByRole("heading", { name: "Users" })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "My Tickets" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Welcome back/ })).toBeVisible();
 
   // The backend refuses as well, not only the route guard (AC-15).
   const staffApi = await page.request.get("http://localhost:3000/api/staff/tickets");

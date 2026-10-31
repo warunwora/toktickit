@@ -33,6 +33,7 @@ const ALLOWED_PARAMS = new Set([
   "relatedSystemId",
   "requestedPriority",
   "status",
+  "statusGroup",
   "sort",
   "order",
   "page",
@@ -45,6 +46,8 @@ export interface TicketListQuery {
   relatedSystemId?: number;
   requestedPriority?: PriorityValue;
   status?: StatusValue;
+  /** Lab 4 drill-down (api-spec.md §5.4): the five active statuses. */
+  statusGroup?: "active";
   sort: SortField;
   order: SortOrder;
   page: number;
@@ -66,6 +69,25 @@ function parsePositiveInt(raw: string): number | null {
   if (!/^\d+$/.test(raw)) return null;
   const value = Number(raw);
   return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
+/**
+ * Active statuses — Lab 4 BR-31. Resolved, Closed and Cancelled are not active.
+ * The one definition every dashboard count and drill-down filter shares.
+ */
+export const ACTIVE_STATUSES: readonly StatusValue[] = [
+  "NEW",
+  "OPEN",
+  "IN_PROGRESS",
+  "WAITING_FOR_REQUESTER",
+  "REOPENED",
+];
+
+/** api-spec.md §5.4 — only "active" exists, and it cannot be combined with status. */
+export function checkStatusGroup(value: string, hasStatus: boolean): FieldError | null {
+  if (value !== "active") return { field: "statusGroup", message: 'statusGroup must be "active"' };
+  if (hasStatus) return { field: "statusGroup", message: "statusGroup cannot be combined with status" };
+  return null;
 }
 
 export function parseTicketListQuery(query: Record<string, unknown>): QueryParseResult {
@@ -124,6 +146,13 @@ export function parseTicketListQuery(query: Record<string, unknown>): QueryParse
     } else {
       result.status = status as StatusValue;
     }
+  }
+
+  const statusGroup = firstValue(query.statusGroup);
+  if (statusGroup !== undefined && statusGroup !== "") {
+    const groupError = checkStatusGroup(statusGroup, result.status !== undefined);
+    if (groupError) errors.push(groupError);
+    else result.statusGroup = "active";
   }
 
   const sort = firstValue(query.sort);

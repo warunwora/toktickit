@@ -6,6 +6,7 @@ import * as authApi from "../../src/api/auth.js";
 import * as reference from "../../src/api/reference.js";
 import * as ticketsApi from "../../src/api/tickets.js";
 import * as staffApi from "../../src/api/staff.js";
+import * as dashboardApi from "../../src/api/dashboard.js";
 import { AuthProvider } from "../../src/context/AuthContext.js";
 import { AppRoutes } from "../../src/AppRoot.js";
 import { ADMINISTRATOR, IT_STAFF, REQUESTER, signedInAs } from "../helpers/auth.js";
@@ -33,6 +34,10 @@ function renderApp(path: string) {
     totalItems: 0,
     totalPages: 1,
   });
+
+  // Lab 4 AC-34 — the landing screen is now each role's dashboard.
+  vi.spyOn(dashboardApi, "getRequesterDashboard").mockReturnValue(new Promise(() => {}));
+  vi.spyOn(dashboardApi, "getStaffDashboard").mockReturnValue(new Promise(() => {}));
 
   return render(
     <MemoryRouter initialEntries={[path]}>
@@ -108,7 +113,7 @@ describe("role-aware application shell", () => {
     signedInAs(IT_STAFF);
     renderApp("/tickets");
 
-    expect(await screen.findByRole("heading", { name: "Ticket Queue" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Welcome back, Warin" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "My Tickets" })).not.toBeInTheDocument();
   });
 
@@ -116,7 +121,7 @@ describe("role-aware application shell", () => {
     signedInAs(REQUESTER);
     renderApp("/staff/queue");
 
-    expect(await screen.findByRole("heading", { name: "My Tickets" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Welcome back, Napat" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Ticket Queue" })).not.toBeInTheDocument();
   });
 
@@ -132,6 +137,6 @@ describe("role-aware application shell", () => {
     signedInAs(REQUESTER);
     renderApp("/");
 
-    await waitFor(() => expect(screen.getByRole("heading", { name: "My Tickets" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Welcome back, Napat" })).toBeInTheDocument());
   });
 });

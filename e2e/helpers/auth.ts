@@ -27,9 +27,26 @@ export async function signIn(page: Page, email: string, password: string = PASSW
   await page.getByRole("button", { name: "Sign In" }).click();
 }
 
-/** Signs in and waits for the role's landing screen to be on screen. */
+/**
+ * Signs in, waits for the role's dashboard (Lab 4 AC-34), then opens the
+ * screen whose heading matches `landing` through the main navigation. The Lab 2
+ * and Lab 3 specs were written when My Tickets and the Ticket Queue were the
+ * landing screens; they still start there, one realistic click later.
+ */
 export async function signInAs(page: Page, email: string, landing: RegExp): Promise<void> {
   await signIn(page, email);
+  await expect(page.getByRole("heading", { name: /^Welcome back/ })).toBeVisible();
+  if (landing.test("Welcome back")) return;
+
+  const destination = ["My Tickets", "Ticket Queue"].find((name) => landing.test(name));
+  if (destination) {
+    const nav = page.getByRole("navigation", { name: "Main" });
+    // Below 768 px the navigation sits behind the Menu button.
+    if (!(await nav.getByRole("link", { name: destination }).isVisible())) {
+      await page.getByRole("button", { name: "Menu" }).click();
+    }
+    await nav.getByRole("link", { name: destination }).click();
+  }
   await expect(page.getByRole("heading", { name: landing })).toBeVisible();
 }
 

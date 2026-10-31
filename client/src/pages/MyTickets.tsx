@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { getCategories, getRelatedSystems, ReferenceItem } from "../api/reference.js";
 import { listTickets, TicketListResponse } from "../api/tickets.js";
 import { PriorityBadge, StatusBadge } from "../components/Badges.js";
 
 // My Tickets — docs/lab-02/ui-spec.md §7.3, api-spec.md §3.2.
+// Lab 4: opens with the filters in its URL, so a dashboard card's View link
+// lists exactly the tickets the card counted (BR-36, AC-28).
 
 const PAGE_SIZES = [5, 10, 20, 50];
 
@@ -17,6 +19,21 @@ const SORT_OPTIONS = [
 ];
 
 const SEARCH_DEBOUNCE_MS = 300;
+
+/** The status select's value for the active group; never a real status. */
+const ACTIVE_GROUP = "active";
+
+const STATUS_OPTIONS = [
+  { value: ACTIVE_GROUP, label: "All active" },
+  { value: "NEW", label: "New" },
+  { value: "OPEN", label: "Open" },
+  { value: "IN_PROGRESS", label: "In Progress" },
+  { value: "WAITING_FOR_REQUESTER", label: "Waiting for Requester" },
+  { value: "RESOLVED", label: "Resolved" },
+  { value: "CLOSED", label: "Closed" },
+  { value: "REOPENED", label: "Reopened" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
 
 interface Filters {
   search: string;
@@ -42,8 +59,20 @@ function formatDate(value: string): string {
   return new Date(value).toLocaleString();
 }
 
+/** Reads the drill-down parameters a dashboard link may carry. */
+function filtersFromUrl(params: URLSearchParams): Filters {
+  const status = params.get("statusGroup") === ACTIVE_GROUP ? ACTIVE_GROUP : params.get("status") ?? "";
+  const sort = `${params.get("sort") ?? ""}:${params.get("order") ?? ""}`;
+  return {
+    ...DEFAULT_FILTERS,
+    status: STATUS_OPTIONS.some((option) => option.value === status) ? status : "",
+    sort: SORT_OPTIONS.some((option) => option.value === sort) ? sort : DEFAULT_FILTERS.sort,
+  };
+}
+
 export default function MyTickets() {
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [searchParams] = useSearchParams();
+  const [filters, setFilters] = useState<Filters>(() => filtersFromUrl(searchParams));
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
 
@@ -94,7 +123,8 @@ export default function MyTickets() {
       categoryId: filters.categoryId,
       relatedSystemId: filters.relatedSystemId,
       requestedPriority: filters.requestedPriority,
-      status: filters.status,
+      status: filters.status === ACTIVE_GROUP ? "" : filters.status,
+      statusGroup: filters.status === ACTIVE_GROUP ? ACTIVE_GROUP : "",
       sort,
       order,
       page,
@@ -223,7 +253,11 @@ export default function MyTickets() {
             onChange={(event) => updateFilter("status", event.target.value)}
           >
             <option value="">All statuses</option>
-            <option value="NEW">New</option>
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
 

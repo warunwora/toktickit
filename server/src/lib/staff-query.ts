@@ -1,5 +1,5 @@
 import { PRIORITIES, PriorityValue, FieldError } from "./validation.js";
-import { STATUSES, StatusValue } from "./query.js";
+import { ACTIVE_STATUSES, STATUSES, StatusValue, checkStatusGroup } from "./query.js";
 
 // IT Staff queue query contract — docs/lab-03/api-spec.md §6.1.
 //
@@ -22,6 +22,8 @@ export const UNASSIGNED = "unassigned";
 export interface StaffQueueQuery {
   search?: string;
   statuses: StatusValue[];
+  /** Lab 4 drill-down (api-spec.md §5.4): the five active statuses. */
+  statusGroup?: "active";
   categoryId?: number;
   itPriority?: PriorityValue;
   /** A user id, the literal "unassigned", or undefined for every owner. */
@@ -82,6 +84,13 @@ export function parseStaffQueueQuery(query: Record<string, unknown>): StaffQueue
     } else if (!result.statuses.includes(status as StatusValue)) {
       result.statuses.push(status as StatusValue);
     }
+  }
+
+  const statusGroup = first(query.statusGroup);
+  if (statusGroup !== undefined && statusGroup !== "") {
+    const groupError = checkStatusGroup(statusGroup, result.statuses.length > 0);
+    if (groupError) errors.push(groupError);
+    else result.statusGroup = "active";
   }
 
   const categoryId = first(query.categoryId);
@@ -146,6 +155,7 @@ export function parseStaffQueueQuery(query: Record<string, unknown>): StaffQueue
 export function staffQueueWhere(query: StaffQueueQuery): Record<string, unknown> {
   return {
     ...(query.statuses.length > 0 ? { status: { in: query.statuses } } : {}),
+    ...(query.statusGroup ? { status: { in: [...ACTIVE_STATUSES] } } : {}),
     ...(query.categoryId ? { categoryId: query.categoryId } : {}),
     ...(query.itPriority ? { itPriority: query.itPriority } : {}),
     ...(query.ownerId === UNASSIGNED
