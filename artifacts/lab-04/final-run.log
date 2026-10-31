@@ -1,0 +1,94 @@
+# Final run 2026-10-31T05:34:23Z on feature/lab4-7-e2e-docs @ ac6275b (+ uncommitted docs)
+## server
+ ✓ tests/lab-04/actions-taken.api.test.ts (28 tests) 590ms
+ ✓ tests/lab-03/users-admin.api.test.ts (25 tests) 2008ms
+ ✓ tests/lab-03/staff-ticket-detail.api.test.ts (19 tests) 424ms
+ ✓ tests/lab-04/ticket-workflow.api.test.ts (19 tests) 486ms
+ ✓ tests/lab-03/auth.api.test.ts (20 tests) 1760ms
+   ✓ POST /api/auth/password > changes the password, clears the flag, keeps the session and invalidates the old password 375ms
+ ✓ tests/lab-03/staff-queue.api.test.ts (17 tests) 213ms
+ ✓ tests/lab-02/attachments.api.test.ts (16 tests) 305ms
+ ✓ tests/lab-03/comments-notes.api.test.ts (14 tests) 194ms
+ ✓ tests/lab-04/staff-dashboard.api.test.ts (11 tests) 332ms
+ ✓ tests/lab-02/my-tickets.api.test.ts (10 tests) 174ms
+ ✓ tests/lab-04/requester-dashboard.api.test.ts (10 tests) 262ms
+ ✓ tests/lab-03/requester-regression.api.test.ts (7 tests) 197ms
+ ✓ tests/lab-04/migration-recovery.test.ts (3 tests) 6371ms
+   ✓ Lab 4 migration and recovery drill > adds Lab 4 without touching Lab 3 rows, reverses cleanly, and re-applies 2355ms
+   ✓ the migrated development database > seeds idempotently, with Tickets holding zero, one and several Actions Taken 1698ms
+ ✓ tests/lab-03/authorization.api.test.ts (19 tests) 171ms
+ ✓ tests/lab-02/create-ticket.api.test.ts (11 tests) 152ms
+ ✓ tests/lab-04/action-rules.unit.test.ts (11 tests) 3ms
+ ✓ tests/lab-03/user-validation.unit.test.ts (13 tests) 4ms
+ ✓ tests/lab-03/transitions.unit.test.ts (10 tests) 3ms
+ ✓ tests/lab-02/ticket-detail.api.test.ts (5 tests) 96ms
+ ✓ tests/lab-03/password.unit.test.ts (12 tests) 458ms
+ ✓ tests/lab-03/staff-query.unit.test.ts (11 tests) 3ms
+ ✓ tests/lab-02/query.unit.test.ts (6 tests) 2ms
+ ✓ tests/lab-04/dashboard-windows.unit.test.ts (4 tests) 3ms
+ ✓ tests/lab-02/validation.unit.test.ts (7 tests) 2ms
+ ✓ tests/lab-02/attachment-rules.unit.test.ts (8 tests) 2ms
+ ✓ tests/lab-02/reference.api.test.ts (2 tests) 58ms
+ ✓ tests/lab-04/resolution-gate.unit.test.ts (2 tests) 2ms
+ ✓ tests/lab-03/content.unit.test.ts (7 tests) 2ms
+ ✓ tests/lab-01/categories.test.ts (1 test) 44ms
+ ✓ tests/lab-02/ticket-number.unit.test.ts (3 tests) 1ms
+ ✓ tests/lab-01/health.test.ts (1 test) 10ms
+ Test Files  31 passed (31)
+      Tests  332 passed (332)
+   Duration  28.36s (transform 277ms, setup 0ms, collect 1.95s, tests 14.33s, environment 3ms, prepare 858ms)
+## client
+ ✓ tests/lab-03/zen-green.lab3.style.test.tsx (8 tests) 379ms
+ ✓ tests/lab-04/StaffDashboard.test.tsx (8 tests) 628ms
+ ✓ tests/lab-03/RequesterComments.test.tsx (8 tests) 725ms
+ ✓ tests/lab-03/StaffTicketQueue.test.tsx (12 tests) 1573ms
+   ✓ IT Staff Ticket Queue > sends the search term after typing and renders the filtered result 359ms
+   ✓ IT Staff Ticket Queue > shows a no-results message with a clear action and no empty table 434ms
+ ✓ tests/lab-03/StaffTicketDetail.test.tsx (16 tests) 1749ms
+ ✓ tests/lab-04/TicketWorkflow.test.tsx (9 tests) 1809ms
+   ✓ Ticket workflow feedback > lists the blocking actions as links into the Actions Taken tab 473ms
+   ✓ Ticket workflow feedback > offers exactly the permitted transitions from every status 339ms
+ ✓ tests/lab-02/AttachmentSection.test.tsx (10 tests) 644ms
+ ✓ tests/lab-04/Hardening.test.tsx (7 tests) 2105ms
+   ✓ Create Ticket > sends one request on a double click 807ms
+   ✓ Create Ticket > keeps every value after a network failure and after a 500 510ms
+   ✓ User Management create panel > creates once on a double click and keeps the fields after a failure 348ms
+ ✓ tests/lab-02/MyTickets.test.tsx (9 tests) 1103ms
+   ✓ My Tickets > sends a search parameter after typing, without a request per keystroke 480ms
+ ✓ tests/lab-03/UserManagement.test.tsx (17 tests) 3101ms
+   ✓ User list > sends the search term and the role filter 417ms
+   ✓ User list > shows a no-results state with a Clear action 373ms
+   ✓ Create User panel > creates the user with one role and shows the password reminder 342ms
+   ✓ Create User panel > puts a duplicate-email rejection on the email field 471ms
+   ✓ Create User panel > disables and relabels Save while the request is in flight 365ms
+ ✓ tests/lab-04/ActionsTaken.test.tsx (20 tests) 3144ms
+   ✓ Add and edit an action > submits the documented payload, with Performed by read-only 647ms
+   ✓ Add and edit an action > keeps the values and offers Reload latest on STALE_UPDATE 310ms
+ ✓ tests/lab-04/RequesterDashboard.test.tsx (4 tests) 343ms
+ ✓ tests/lab-03/AppShell.role.test.tsx (8 tests) 369ms
+ ✓ tests/lab-02/zen-green.style.test.tsx (5 tests) 922ms
+   ✓ Zen Green form styling > uses the documented button hierarchy and disables the busy submit 566ms
+ ✓ tests/lab-02/RequesterTicketDetail.test.tsx (5 tests) 346ms
+ ✓ tests/lab-03/Login.test.tsx (10 tests) 1798ms
+   ✓ Login > sends each role to its own landing screen 482ms
+ ✓ tests/lab-04/zen-green.lab4.style.test.tsx (5 tests) 77ms
+ ✓ tests/lab-01/App.test.tsx (3 tests) 136ms
+ ✓ tests/lab-03/ChangePassword.test.tsx (8 tests) 1169ms
+   ✓ Change Password > ticks each rule as the new password satisfies it 308ms
+ ✓ tests/lab-02/CreateTicket.test.tsx (14 tests) 4997ms
+   ✓ Create Ticket > shows a field-level message and sends no request when Summary is empty 521ms
+   ✓ Create Ticket > disables Submit and shows a busy label while the request is in flight 550ms
+   ✓ Create Ticket > shows the ticket number returned by the backend and a next action 569ms
+   ✓ Create Ticket > sends the trimmed values the API contract expects 582ms
+   ✓ Create Ticket > keeps every entered value when the API call fails 577ms
+   ✓ Create Ticket > maps backend field errors onto the matching fields 596ms
+   ✓ Create Ticket > shows the duplicate-submission message from the backend 462ms
+   ✓ Create Ticket > keeps the created ticket and reports the file when an upload fails 373ms
+ Test Files  20 passed (20)
+      Tests  186 passed (186)
+   Duration  7.65s (transform 933ms, setup 1.29s, collect 4.77s, tests 27.12s, environment 12.55s, prepare 1.36s)
+## client build
+✓ built in 1.09s
+## playwright
+Removed 6 end-to-end test account(s); kept 0 that still own ticket history.
+  64 passed (1.1m)

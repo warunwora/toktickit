@@ -29,133 +29,133 @@ Types: **U** unit · **API** API/integration · **AUTHZ** authorization · **WF*
 
 | Test ID | Type | AC | What it tests | Expected result | Automated test file | Final |
 |---|---|---|---|---|---|---|
-| U-01 | U | AC-06 | Description empty, whitespace, 2000 and 2001 characters | rejected, rejected, accepted, rejected | `action-rules.unit.test.ts` | Pending |
-| U-02 | U | AC-06 | Action Date/Time: in 6 minutes, in 4 minutes, before the Ticket, missing | rejected, accepted, rejected, rejected | `action-rules.unit.test.ts` | Pending |
-| U-03 | U | AC-06 | Follow-Up Required true without note; false with note | rejected; accepted with note cleared | `action-rules.unit.test.ts` | Pending |
-| U-04 | U | AC-08 | Completed without Result; Cancelled without reason or with 2 characters | all rejected | `action-rules.unit.test.ts` | Pending |
-| U-05 | U | AC-07 | Every permitted action transition (§5.2) | allowed | `action-rules.unit.test.ts` | Pending |
-| U-06 | U | AC-09 | Every forbidden action transition, including out of Completed and Cancelled | rejected | `action-rules.unit.test.ts` | Pending |
-| U-07 | U | AC-14 | Resolution gate with a Planned, an In Progress, a Completed+open follow-up, a Completed+cleared follow-up, a Cancelled action, and none | blocked, blocked, blocked, allowed, allowed, allowed | `resolution-gate.unit.test.ts` | Pending |
-| U-08 | U | AC-14 | Gate result lists each blocking action with its reason | `INCOMPLETE` / `FOLLOW_UP_OPEN` | `resolution-gate.unit.test.ts` | Pending |
-| U-09 | U | AC-24 | Window boundaries: updated exactly 7 days ago, 7 days minus 1 second, resolved 30 days ago | out, in, out | `dashboard-windows.unit.test.ts` | Pending |
-| U-10 | U | AC-28 | Drill-down URL builder for every card | matches api-spec.md §5 | `dashboard-windows.unit.test.ts` | Pending |
+| U-01 | U | AC-06 | Description empty, whitespace, 2000 and 2001 characters | rejected, rejected, accepted, rejected | `action-rules.unit.test.ts` | Pass |
+| U-02 | U | AC-06 | Action Date/Time: in 6 minutes, in 4 minutes, before the Ticket, missing | rejected, accepted, rejected, rejected | `action-rules.unit.test.ts` | Pass |
+| U-03 | U | AC-06 | Follow-Up Required true without note; false with note | rejected; accepted with note cleared | `action-rules.unit.test.ts` | Pass |
+| U-04 | U | AC-08 | Completed without Result; Cancelled without reason or with 2 characters | all rejected | `action-rules.unit.test.ts` | Pass |
+| U-05 | U | AC-07 | Every permitted action transition (§5.2) | allowed | `action-rules.unit.test.ts` | Pass |
+| U-06 | U | AC-09 | Every forbidden action transition, including out of Completed and Cancelled | rejected | `action-rules.unit.test.ts` | Pass |
+| U-07 | U | AC-14 | Resolution gate with a Planned, an In Progress, a Completed+open follow-up, a Completed+cleared follow-up, a Cancelled action, and none | blocked, blocked, blocked, allowed, allowed, allowed | `resolution-gate.unit.test.ts` | Pass |
+| U-08 | U | AC-14 | Gate result lists each blocking action with its reason | `INCOMPLETE` / `FOLLOW_UP_OPEN` | `resolution-gate.unit.test.ts` | Pass |
+| U-09 | U | AC-24 | Window boundaries: updated exactly 7 days ago, 7 days minus 1 second, resolved 30 days ago | out, in, out | `dashboard-windows.unit.test.ts` | Pass |
+| U-10 | U | AC-28 | Drill-down URL builder for every card | matches api-spec.md §5 | `dashboard-windows.unit.test.ts` | Pass |
 
 ### 2.2 API — Actions Taken, `server/tests/lab-04/actions-taken.api.test.ts`
 
 | Test ID | Type | AC | What it tests | Expected result | Automated test file | Final |
 |---|---|---|---|---|---|---|
-| API-01 | API | AC-01 | IT Staff creates a valid action assigned to another IT Staff member | 201, correct ticketId, performer = session user, assignee = chosen user, version 1 | `actions-taken.api.test.ts` | Pending |
-| API-02 | API | AC-01 | Create without assigneeId | assignee defaults to the performer | `actions-taken.api.test.ts` | Pending |
-| API-03 | API | AC-05 | Body includes `performedById` of someone else | ignored; session user stored | `actions-taken.api.test.ts` | Pending |
-| API-04 | AUTHZ | AC-02 | Administrator creates and updates an action | 201 and 200 | `actions-taken.api.test.ts` | Pending |
-| API-05 | AUTHZ | AC-03 | Requester creates or updates an action on their own Ticket | 403, nothing stored | `actions-taken.api.test.ts` | Pending |
-| API-06 | AUTHZ | AC-03 | No session on list, create and update | 401 | `actions-taken.api.test.ts` | Pending |
-| API-07 | API | AC-04 | Assignee inactive, a Requester, unknown id | 400 on `assigneeId` in each case | `actions-taken.api.test.ts` | Pending |
-| API-08 | API | AC-04 | Reassign an open action to an inactive user | 400, assignee unchanged | `actions-taken.api.test.ts` | Pending |
-| API-09 | API | AC-06 | Each invalid field from U-01 to U-03 through the API | 400 with the field named, nothing stored | `actions-taken.api.test.ts` | Pending |
-| API-10 | API | AC-07 | Planned → In Progress → Completed with Result | 200 each, `completedAt` set, version +1 each | `actions-taken.api.test.ts` | Pending |
-| API-11 | API | AC-08 | Complete without Result; cancel without reason | 400 | `actions-taken.api.test.ts` | Pending |
-| API-12 | API | AC-09 | Edit description of a Completed action; reopen a Cancelled one | 400 `ACTION_FINAL` | `actions-taken.api.test.ts` | Pending |
-| API-13 | API | AC-09 | Clear the follow-up of a Completed action; clear it twice | 200 with clearer recorded; second is 400 | `actions-taken.api.test.ts` | Pending |
-| API-14 | API | AC-10 | Three actions, two with the same Action Date/Time | listed by actionAt then id, identical on repeated calls | `actions-taken.api.test.ts` | Pending |
-| API-15 | API | AC-11 | Two different IT Staff record actions on one Ticket owned by a third | each action keeps its own performer and assignee | `actions-taken.api.test.ts` | Pending |
-| API-16 | API | AC-12 | Create or update on a Closed and on a Cancelled Ticket | 400 `TICKET_LOCKED` | `actions-taken.api.test.ts` | Pending |
-| API-17 | AUTHZ | AC-13 | Requester lists actions of own Ticket; of another Requester's Ticket; of a missing Ticket | 200; 404; 404 with identical bodies | `actions-taken.api.test.ts` | Pending |
-| API-18 | API | AC-18 | Two updates from the same version | first 200, second 409 `STALE_UPDATE` with current action | `actions-taken.api.test.ts` | Pending |
-| API-19 | API | AC-36 | The same create request sent twice within 60 seconds | 201 then 409 `DUPLICATE_SUBMISSION` with the original id; one row | `actions-taken.api.test.ts` | Pending |
-| API-20 | API | AC-19 | Creating and completing an action | parent Ticket version and updatedAt increase | `actions-taken.api.test.ts` | Pending |
+| API-01 | API | AC-01 | IT Staff creates a valid action assigned to another IT Staff member | 201, correct ticketId, performer = session user, assignee = chosen user, version 1 | `actions-taken.api.test.ts` | Pass |
+| API-02 | API | AC-01 | Create without assigneeId | assignee defaults to the performer | `actions-taken.api.test.ts` | Pass |
+| API-03 | API | AC-05 | Body includes `performedById` of someone else | ignored; session user stored | `actions-taken.api.test.ts` | Pass |
+| API-04 | AUTHZ | AC-02 | Administrator creates and updates an action | 201 and 200 | `actions-taken.api.test.ts` | Pass |
+| API-05 | AUTHZ | AC-03 | Requester creates or updates an action on their own Ticket | 403, nothing stored | `actions-taken.api.test.ts` | Pass |
+| API-06 | AUTHZ | AC-03 | No session on list, create and update | 401 | `actions-taken.api.test.ts` | Pass |
+| API-07 | API | AC-04 | Assignee inactive, a Requester, unknown id | 400 on `assigneeId` in each case | `actions-taken.api.test.ts` | Pass |
+| API-08 | API | AC-04 | Reassign an open action to an inactive user | 400, assignee unchanged | `actions-taken.api.test.ts` | Pass |
+| API-09 | API | AC-06 | Each invalid field from U-01 to U-03 through the API | 400 with the field named, nothing stored | `actions-taken.api.test.ts` | Pass |
+| API-10 | API | AC-07 | Planned → In Progress → Completed with Result | 200 each, `completedAt` set, version +1 each | `actions-taken.api.test.ts` | Pass |
+| API-11 | API | AC-08 | Complete without Result; cancel without reason | 400 | `actions-taken.api.test.ts` | Pass |
+| API-12 | API | AC-09 | Edit description of a Completed action; reopen a Cancelled one | 400 `ACTION_FINAL` | `actions-taken.api.test.ts` | Pass |
+| API-13 | API | AC-09 | Clear the follow-up of a Completed action; clear it twice | 200 with clearer recorded; second is 400 | `actions-taken.api.test.ts` | Pass |
+| API-14 | API | AC-10 | Three actions, two with the same Action Date/Time | listed by actionAt then id, identical on repeated calls | `actions-taken.api.test.ts` | Pass |
+| API-15 | API | AC-11 | Two different IT Staff record actions on one Ticket owned by a third | each action keeps its own performer and assignee | `actions-taken.api.test.ts` | Pass |
+| API-16 | API | AC-12 | Create or update on a Closed and on a Cancelled Ticket | 400 `TICKET_LOCKED` | `actions-taken.api.test.ts` | Pass |
+| API-17 | AUTHZ | AC-13 | Requester lists actions of own Ticket; of another Requester's Ticket; of a missing Ticket | 200; 404; 404 with identical bodies | `actions-taken.api.test.ts` | Pass |
+| API-18 | API | AC-18 | Two updates from the same version | first 200, second 409 `STALE_UPDATE` with current action | `actions-taken.api.test.ts` | Pass |
+| API-19 | API | AC-36 | The same create request sent twice within 60 seconds | 201 then 409 `DUPLICATE_SUBMISSION` with the original id; one row | `actions-taken.api.test.ts` | Pass |
+| API-20 | API | AC-19 | Creating and completing an action | parent Ticket version and updatedAt increase | `actions-taken.api.test.ts` | Pass |
 
 ### 2.3 API — Ticket workflow, `server/tests/lab-04/ticket-workflow.api.test.ts`
 
 | Test ID | Type | AC | What it tests | Expected result | Automated test file | Final |
 |---|---|---|---|---|---|---|
-| WF-01 | WF | AC-14 | Resolve with a Planned action, bypassing the UI | 409 `RESOLUTION_BLOCKED` listing it; status unchanged | `ticket-workflow.api.test.ts` | Pending |
-| WF-02 | WF | AC-14 | Resolve with an In Progress action | 409, status unchanged | `ticket-workflow.api.test.ts` | Pending |
-| WF-03 | WF | AC-15 | Resolve with an open follow-up, then after clearing it | 409, then 200 | `ticket-workflow.api.test.ts` | Pending |
-| WF-04 | WF | AC-16 | Resolve a legacy Ticket with no actions | 200 | `ticket-workflow.api.test.ts` | Pending |
-| WF-05 | WF | AC-14 | Resolve from Reopened with an incomplete action | 409 | `ticket-workflow.api.test.ts` | Pending |
-| WF-06 | WF | AC-17 | Two staff updates from the same Ticket version | first 200, second 409 `STALE_UPDATE` with current Ticket, nothing written | `ticket-workflow.api.test.ts` | Pending |
-| WF-07 | WF | AC-17 | Owner change from a stale version | 409 | `ticket-workflow.api.test.ts` | Pending |
-| WF-08 | WF | AC-17 | Ticket update without `version` | 400 on `version` | `ticket-workflow.api.test.ts` | Pending |
-| WF-09 | WF | AC-19 | Status change from a version taken before an action was completed | 409 | `ticket-workflow.api.test.ts` | Pending |
-| WF-10 | WF | AC-20 | Every permitted Ticket transition from §5.1 (gate satisfied) | 200 | `ticket-workflow.api.test.ts` | Pending |
-| WF-11 | WF | AC-20 | A forbidden transition from every status, including Closed and Cancelled | 400 `INVALID_TRANSITION`, unchanged | `ticket-workflow.api.test.ts` | Pending |
-| WF-12 | WF | AC-22 | Requester indication on a Ticket with an incomplete action | recorded, status unchanged, gate still applies | `ticket-workflow.api.test.ts` | Pending |
-| WF-13 | AUTHZ | AC-33 | Administrator claims a Ticket, sets IT Priority, changes status | 200 each | `ticket-workflow.api.test.ts` | Pending |
-| WF-14 | AUTHZ | AC-33 | Assign a Ticket to an Administrator; assignable-users includes Administrators | 200; list includes them | `ticket-workflow.api.test.ts` | Pending |
-| WF-15 | AUTHZ | AC-03 | Requester calls each staff write endpoint | 403 | `ticket-workflow.api.test.ts` | Pending |
-| WF-16 | WF | AC-21 | Successful update response | includes the new status, badges data and incremented version | `ticket-workflow.api.test.ts` | Pending |
+| WF-01 | WF | AC-14 | Resolve with a Planned action, bypassing the UI | 409 `RESOLUTION_BLOCKED` listing it; status unchanged | `ticket-workflow.api.test.ts` | Pass |
+| WF-02 | WF | AC-14 | Resolve with an In Progress action | 409, status unchanged | `ticket-workflow.api.test.ts` | Pass |
+| WF-03 | WF | AC-15 | Resolve with an open follow-up, then after clearing it | 409, then 200 | `ticket-workflow.api.test.ts` | Pass |
+| WF-04 | WF | AC-16 | Resolve a legacy Ticket with no actions | 200 | `ticket-workflow.api.test.ts` | Pass |
+| WF-05 | WF | AC-14 | Resolve from Reopened with an incomplete action | 409 | `ticket-workflow.api.test.ts` | Pass |
+| WF-06 | WF | AC-17 | Two staff updates from the same Ticket version | first 200, second 409 `STALE_UPDATE` with current Ticket, nothing written | `ticket-workflow.api.test.ts` | Pass |
+| WF-07 | WF | AC-17 | Owner change from a stale version | 409 | `ticket-workflow.api.test.ts` | Pass |
+| WF-08 | WF | AC-17 | Ticket update without `version` | 400 on `version` | `ticket-workflow.api.test.ts` | Pass |
+| WF-09 | WF | AC-19 | Status change from a version taken before an action was completed | 409 | `ticket-workflow.api.test.ts` | Pass |
+| WF-10 | WF | AC-20 | Every permitted Ticket transition from §5.1 (gate satisfied) | 200 | `ticket-workflow.api.test.ts` | Pass |
+| WF-11 | WF | AC-20 | A forbidden transition from every status, including Closed and Cancelled | 400 `INVALID_TRANSITION`, unchanged | `ticket-workflow.api.test.ts` | Pass |
+| WF-12 | WF | AC-22 | Requester indication on a Ticket with an incomplete action | recorded, status unchanged, gate still applies | `ticket-workflow.api.test.ts` | Pass |
+| WF-13 | AUTHZ | AC-33 | Administrator claims a Ticket, sets IT Priority, changes status | 200 each | `ticket-workflow.api.test.ts` | Pass |
+| WF-14 | AUTHZ | AC-33 | Assign a Ticket to an Administrator; assignable-users includes Administrators | 200; list includes them | `ticket-workflow.api.test.ts` | Pass |
+| WF-15 | AUTHZ | AC-03 | Requester calls each staff write endpoint | 403 | `ticket-workflow.api.test.ts` | Pass |
+| WF-16 | WF | AC-21 | Successful update response | includes the new status, badges data and incremented version | `ticket-workflow.api.test.ts` | Pass |
 
 ### 2.4 API — Requester dashboard, `server/tests/lab-04/requester-dashboard.api.test.ts`
 
 | Test ID | Type | AC | What it tests | Expected result | Automated test file | Final |
 |---|---|---|---|---|---|---|
-| DR-01 | API | AC-24 | Each metric on a dedicated test Requester with known Tickets | equals the documented SQL run in the test | `requester-dashboard.api.test.ts` | Pending |
-| DR-02 | AUTHZ | AC-23 | Another Requester's Tickets exist | never counted or listed | `requester-dashboard.api.test.ts` | Pending |
-| DR-03 | API | AC-24 | Recently updated and recently resolved windows and order | 7 / 30 days, newest first, max 5 | `requester-dashboard.api.test.ts` | Pending |
-| DR-04 | API | AC-27 | Requester with no Tickets | all 0, lists empty, 200 | `requester-dashboard.api.test.ts` | Pending |
-| DR-05 | API | AC-28 | `GET /api/tickets?statusGroup=active` | returns exactly the Tickets counted as Open | `requester-dashboard.api.test.ts` | Pending |
-| DR-06 | AUTHZ | AC-29 | IT Staff and Administrator call it; no session | 403, 403, 401 | `requester-dashboard.api.test.ts` | Pending |
-| DR-07 | API | AC-30 | Response shape | only the documented summary fields | `requester-dashboard.api.test.ts` | Pending |
-| PERF-01 | PERF | AC-31 | Requester dashboard on the seeded database, 20 sequential calls | p95 under 300 ms | `requester-dashboard.api.test.ts` | Pending |
+| DR-01 | API | AC-24 | Each metric on a dedicated test Requester with known Tickets | equals the documented SQL run in the test | `requester-dashboard.api.test.ts` | Pass |
+| DR-02 | AUTHZ | AC-23 | Another Requester's Tickets exist | never counted or listed | `requester-dashboard.api.test.ts` | Pass |
+| DR-03 | API | AC-24 | Recently updated and recently resolved windows and order | 7 / 30 days, newest first, max 5 | `requester-dashboard.api.test.ts` | Pass |
+| DR-04 | API | AC-27 | Requester with no Tickets | all 0, lists empty, 200 | `requester-dashboard.api.test.ts` | Pass |
+| DR-05 | API | AC-28 | `GET /api/tickets?statusGroup=active` | returns exactly the Tickets counted as Open | `requester-dashboard.api.test.ts` | Pass |
+| DR-06 | AUTHZ | AC-29 | IT Staff and Administrator call it; no session | 403, 403, 401 | `requester-dashboard.api.test.ts` | Pass |
+| DR-07 | API | AC-30 | Response shape | only the documented summary fields | `requester-dashboard.api.test.ts` | Pass |
+| PERF-01 | PERF | AC-31 | Requester dashboard on the seeded database, 20 sequential calls | p95 under 300 ms | `requester-dashboard.api.test.ts` | Pass |
 
 ### 2.5 API — IT Staff dashboard, `server/tests/lab-04/staff-dashboard.api.test.ts`
 
 | Test ID | Type | AC | What it tests | Expected result | Automated test file | Final |
 |---|---|---|---|---|---|---|
-| DS-01 | API | AC-25 | Unassigned, Owned by me, Urgent (active) | each equals its documented SQL | `staff-dashboard.api.test.ts` | Pending |
-| DS-02 | API | AC-25 | My open actions count and list | equals SQL; only Planned/In Progress assigned to me; max 5 | `staff-dashboard.api.test.ts` | Pending |
-| DS-03 | API | AC-25 | By status and by IT Priority | all eight / four keys present, values equal SQL | `staff-dashboard.api.test.ts` | Pending |
-| DS-04 | API | AC-26 | Administrator | includes `users` counts equal to SQL; IT Staff response has no `users` key | `staff-dashboard.api.test.ts` | Pending |
-| DS-05 | API | AC-27 | IT Staff user with no owned Tickets and no actions | zeros and empty lists | `staff-dashboard.api.test.ts` | Pending |
-| DS-06 | API | AC-28 | Queue with `ownerId=unassigned&statusGroup=active` and with `ownerId=me&statusGroup=active` | totals equal the cards | `staff-dashboard.api.test.ts` | Pending |
-| DS-07 | API | AC-28 | `statusGroup` with `status`, and an unknown `statusGroup` | 400 | `staff-dashboard.api.test.ts` | Pending |
-| DS-08 | AUTHZ | AC-29 | Requester calls it; no session | 403, 401 | `staff-dashboard.api.test.ts` | Pending |
-| PERF-02 | PERF | AC-31 | Staff dashboard on the seeded database, 20 sequential calls | p95 under 300 ms | `staff-dashboard.api.test.ts` | Pending |
-| PERF-03 | PERF | AC-31 | Actions Taken list of the Ticket with the most actions | p95 under 200 ms | `staff-dashboard.api.test.ts` | Pending |
+| DS-01 | API | AC-25 | Unassigned, Owned by me, Urgent (active) | each equals its documented SQL | `staff-dashboard.api.test.ts` | Pass |
+| DS-02 | API | AC-25 | My open actions count and list | equals SQL; only Planned/In Progress assigned to me; max 5 | `staff-dashboard.api.test.ts` | Pass |
+| DS-03 | API | AC-25 | By status and by IT Priority | all eight / four keys present, values equal SQL | `staff-dashboard.api.test.ts` | Pass |
+| DS-04 | API | AC-26 | Administrator | includes `users` counts equal to SQL; IT Staff response has no `users` key | `staff-dashboard.api.test.ts` | Pass |
+| DS-05 | API | AC-27 | IT Staff user with no owned Tickets and no actions | zeros and empty lists | `staff-dashboard.api.test.ts` | Pass |
+| DS-06 | API | AC-28 | Queue with `ownerId=unassigned&statusGroup=active` and with `ownerId=me&statusGroup=active` | totals equal the cards | `staff-dashboard.api.test.ts` | Pass |
+| DS-07 | API | AC-28 | `statusGroup` with `status`, and an unknown `statusGroup` | 400 | `staff-dashboard.api.test.ts` | Pass |
+| DS-08 | AUTHZ | AC-29 | Requester calls it; no session | 403, 401 | `staff-dashboard.api.test.ts` | Pass |
+| PERF-02 | PERF | AC-31 | Staff dashboard on the seeded database, 20 sequential calls | p95 under 300 ms | `staff-dashboard.api.test.ts` | Pass |
+| PERF-03 | PERF | AC-31 | Actions Taken list of the Ticket with the most actions | p95 under 200 ms | `staff-dashboard.api.test.ts` | Pass |
 
 ### 2.6 Migration and regression, `server/tests/lab-04/`
 
 | Test ID | Type | AC | What it tests | Expected result | Automated test file | Final |
 |---|---|---|---|---|---|---|
-| REG-01 | REG | AC-39 | After migration every Lab 3 Ticket, Attachment, Comment and Note still resolves; every Ticket has version 1 or more | intact | `migration-recovery.test.ts` | Pending |
-| REG-02 | REG | AC-39 | Recovery script on a throwaway schema holding Lab 3 data | ActionTaken table and Ticket.version gone, Lab 3 rows unchanged | `migration-recovery.test.ts` | Pending |
-| REG-03 | REG | AC-39 | Re-apply the migration after recovery | succeeds, data intact | `migration-recovery.test.ts` | Pending |
-| REG-04 | REG | AC-40 | Seed run twice | second run creates nothing; Tickets with 0, 1 and several actions exist | `migration-recovery.test.ts` | Pending |
-| REG-05 | REG | AC-35 | Lab 1, 2 and 3 server suites | all pass (the Administrator 403 cases updated per BR-26 and the version field per BR-24, named in their PRs) | `server/tests/lab-01..03` | Pending |
-| REG-06 | REG | AC-16 | Legacy Tickets with no actions | count in dashboards and resolve normally | `migration-recovery.test.ts` | Pending |
+| REG-01 | REG | AC-39 | After migration every Lab 3 Ticket, Attachment, Comment and Note still resolves; every Ticket has version 1 or more | intact | `migration-recovery.test.ts` | Pass |
+| REG-02 | REG | AC-39 | Recovery script on a throwaway schema holding Lab 3 data | ActionTaken table and Ticket.version gone, Lab 3 rows unchanged | `migration-recovery.test.ts` | Pass |
+| REG-03 | REG | AC-39 | Re-apply the migration after recovery | succeeds, data intact | `migration-recovery.test.ts` | Pass |
+| REG-04 | REG | AC-40 | Seed run twice | second run creates nothing; Tickets with 0, 1 and several actions exist | `migration-recovery.test.ts` | Pass |
+| REG-05 | REG | AC-35 | Lab 1, 2 and 3 server suites | all pass (the Administrator 403 cases updated per BR-26 and the version field per BR-24, named in their PRs) | `server/tests/lab-01..03` | Pass |
+| REG-06 | REG | AC-16 | Legacy Tickets with no actions | count in dashboards and resolve normally | `migration-recovery.test.ts` | Pass |
 
 ### 2.7 UI component — `client/tests/lab-04/`
 
 | Test ID | Type | AC | What it tests | Expected result | Automated test file | Final |
 |---|---|---|---|---|---|---|
-| UI-01 | UI | AC-10 | Actions Taken tab lists actions in the given order with all columns | rendered | `ActionsTaken.test.tsx` | Pending |
-| UI-02 | UI | AC-01 | Create form submits the documented payload; Performed by read-only | correct body; field not editable | `ActionsTaken.test.tsx` | Pending |
-| UI-03 | UI | AC-06 | Client validation: description, future date, follow-up note, result when Completed | field messages, no request | `ActionsTaken.test.tsx` | Pending |
-| UI-04 | UI | AC-07 | Start and Complete buttons only on permitted states | shown/hidden correctly | `ActionsTaken.test.tsx` | Pending |
-| UI-05 | UI | AC-08 | Cancel opens a dialog requiring a reason; Escape closes and returns focus | behaves | `ActionsTaken.test.tsx` | Pending |
-| UI-06 | UI | AC-09 | Final actions show no edit controls; open follow-up shows Mark follow-up done | rendered | `ActionsTaken.test.tsx` | Pending |
-| UI-07 | UI | AC-11 | Action assigned to someone other than the owner | shows "Not the ticket owner" hint | `ActionsTaken.test.tsx` | Pending |
-| UI-08 | UI | AC-18 | 409 `STALE_UPDATE` on save | warning with Reload latest; values kept | `ActionsTaken.test.tsx` | Pending |
-| UI-09 | UI | AC-37 | Network failure and 500 on save | safe message; every value kept | `ActionsTaken.test.tsx` | Pending |
-| UI-10 | UI | AC-36 | Double click on Save action | one request; button disabled with busy label | `ActionsTaken.test.tsx` | Pending |
-| UI-11 | UI | AC-13 | Requester Ticket Detail | read-only list, no controls, empty state | `ActionsTaken.test.tsx` | Pending |
-| UI-12 | UI | AC-04 | Assignee select lists only the assignable users from the API | options match | `ActionsTaken.test.tsx` | Pending |
-| UI-13 | UI | AC-14 | `RESOLUTION_BLOCKED` response | callout listing blocking actions as links | `TicketWorkflow.test.tsx` | Pending |
-| UI-14 | UI | AC-17 | `STALE_UPDATE` on status save | warning with Reload latest, selections kept | `TicketWorkflow.test.tsx` | Pending |
-| UI-15 | UI | AC-20 | Status select from each status | only permitted options | `TicketWorkflow.test.tsx` | Pending |
-| UI-16 | UI | AC-21 | Successful status change | summary and badges update without reload; new version used next | `TicketWorkflow.test.tsx` | Pending |
-| UI-17 | UI | AC-33 | Administrator on Staff Ticket Detail | claim, IT Priority, status and Add action controls present | `TicketWorkflow.test.tsx` | Pending |
-| UI-18 | UI | AC-22 | Requester indication marker | shown next to status, status unchanged | `TicketWorkflow.test.tsx` | Pending |
-| UI-19 | UI | AC-24 | Requester dashboard renders four cards and two lists from API data | rendered with Bangkok times | `RequesterDashboard.test.tsx` | Pending |
-| UI-20 | UI | AC-27 | Zero metrics and empty lists | "Nothing here right now" and empty messages | `RequesterDashboard.test.tsx` | Pending |
-| UI-21 | UI | AC-28 | View links | exact drill-down URLs | `RequesterDashboard.test.tsx` | Pending |
-| UI-22 | UI | AC-32 | Loading then failure | skeleton with aria-busy, then error with Retry; Retry reloads | `RequesterDashboard.test.tsx` | Pending |
-| UI-23 | UI | AC-25 | IT Staff dashboard renders cards, by-status, by-priority, my actions, recent | rendered | `StaffDashboard.test.tsx` | Pending |
-| UI-24 | UI | AC-26 | Administrator sees the Users group; IT Staff does not | correct | `StaffDashboard.test.tsx` | Pending |
-| UI-25 | UI | AC-28 | Every View link on the staff dashboard | exact drill-down URLs | `StaffDashboard.test.tsx` | Pending |
-| UI-26 | UI | AC-34 | Navigation and landing for each role, active page indicated | correct order, `aria-current` | `StaffDashboard.test.tsx` | Pending |
-| UI-27 | UI | AC-32 | Staff dashboard failure and forbidden | safe messages | `StaffDashboard.test.tsx` | Pending |
+| UI-01 | UI | AC-10 | Actions Taken tab lists actions in the given order with all columns | rendered | `ActionsTaken.test.tsx` | Pass |
+| UI-02 | UI | AC-01 | Create form submits the documented payload; Performed by read-only | correct body; field not editable | `ActionsTaken.test.tsx` | Pass |
+| UI-03 | UI | AC-06 | Client validation: description, future date, follow-up note, result when Completed | field messages, no request | `ActionsTaken.test.tsx` | Pass |
+| UI-04 | UI | AC-07 | Start and Complete buttons only on permitted states | shown/hidden correctly | `ActionsTaken.test.tsx` | Pass |
+| UI-05 | UI | AC-08 | Cancel opens a dialog requiring a reason; Escape closes and returns focus | behaves | `ActionsTaken.test.tsx` | Pass |
+| UI-06 | UI | AC-09 | Final actions show no edit controls; open follow-up shows Mark follow-up done | rendered | `ActionsTaken.test.tsx` | Pass |
+| UI-07 | UI | AC-11 | Action assigned to someone other than the owner | shows "Not the ticket owner" hint | `ActionsTaken.test.tsx` | Pass |
+| UI-08 | UI | AC-18 | 409 `STALE_UPDATE` on save | warning with Reload latest; values kept | `ActionsTaken.test.tsx` | Pass |
+| UI-09 | UI | AC-37 | Network failure and 500 on save | safe message; every value kept | `ActionsTaken.test.tsx` | Pass |
+| UI-10 | UI | AC-36 | Double click on Save action | one request; button disabled with busy label | `ActionsTaken.test.tsx` | Pass |
+| UI-11 | UI | AC-13 | Requester Ticket Detail | read-only list, no controls, empty state | `ActionsTaken.test.tsx` | Pass |
+| UI-12 | UI | AC-04 | Assignee select lists only the assignable users from the API | options match | `ActionsTaken.test.tsx` | Pass |
+| UI-13 | UI | AC-14 | `RESOLUTION_BLOCKED` response | callout listing blocking actions as links | `TicketWorkflow.test.tsx` | Pass |
+| UI-14 | UI | AC-17 | `STALE_UPDATE` on status save | warning with Reload latest, selections kept | `TicketWorkflow.test.tsx` | Pass |
+| UI-15 | UI | AC-20 | Status select from each status | only permitted options | `TicketWorkflow.test.tsx` | Pass |
+| UI-16 | UI | AC-21 | Successful status change | summary and badges update without reload; new version used next | `TicketWorkflow.test.tsx` | Pass |
+| UI-17 | UI | AC-33 | Administrator on Staff Ticket Detail | claim, IT Priority, status and Add action controls present | `TicketWorkflow.test.tsx` | Pass |
+| UI-18 | UI | AC-22 | Requester indication marker | shown next to status, status unchanged | `TicketWorkflow.test.tsx` | Pass |
+| UI-19 | UI | AC-24 | Requester dashboard renders four cards and two lists from API data | rendered with Bangkok times | `RequesterDashboard.test.tsx` | Pass |
+| UI-20 | UI | AC-27 | Zero metrics and empty lists | "Nothing here right now" and empty messages | `RequesterDashboard.test.tsx` | Pass |
+| UI-21 | UI | AC-28 | View links | exact drill-down URLs | `RequesterDashboard.test.tsx` | Pass |
+| UI-22 | UI | AC-32 | Loading then failure | skeleton with aria-busy, then error with Retry; Retry reloads | `RequesterDashboard.test.tsx` | Pass |
+| UI-23 | UI | AC-25 | IT Staff dashboard renders cards, by-status, by-priority, my actions, recent | rendered | `StaffDashboard.test.tsx` | Pass |
+| UI-24 | UI | AC-26 | Administrator sees the Users group; IT Staff does not | correct | `StaffDashboard.test.tsx` | Pass |
+| UI-25 | UI | AC-28 | Every View link on the staff dashboard | exact drill-down URLs | `StaffDashboard.test.tsx` | Pass |
+| UI-26 | UI | AC-34 | Navigation and landing for each role, active page indicated | correct order, `aria-current` | `StaffDashboard.test.tsx` | Pass |
+| UI-27 | UI | AC-32 | Staff dashboard failure and forbidden | safe messages | `StaffDashboard.test.tsx` | Pass |
 
 ### 2.7a Hardening — `client/tests/lab-04/Hardening.test.tsx`
 
@@ -164,44 +164,44 @@ forms as well as the new ones (the Actions Taken form is covered by UI-08 … UI
 
 | Test ID | Type | AC | What it tests | Expected result | Automated test file | Final |
 |---|---|---|---|---|---|---|
-| HARD-01 | UI | AC-36 | Create Ticket double click | one request | `Hardening.test.tsx` | Pending |
-| HARD-02 | UI | AC-37 | Create Ticket network failure and 500 | every value kept | `Hardening.test.tsx` | Pending |
-| HARD-03 | UI | AC-36, AC-37 | Comment composer double click, then a failure | one request; text kept | `Hardening.test.tsx` | Pending |
-| HARD-04 | UI | AC-37 | Staff Ticket Detail network failure and 500; a 400 still reverts | selections kept; reverted on 400 | `Hardening.test.tsx` | Pending |
-| HARD-05 | UI | AC-36 | Staff Ticket Detail Save double click | one request, busy label | `Hardening.test.tsx` | Pending |
-| HARD-06 | UI | AC-36, AC-37, AC-28 | User Management opened with `?role=`, create double click, then a failure | filtered; one request; fields kept | `Hardening.test.tsx` | Pending |
+| HARD-01 | UI | AC-36 | Create Ticket double click | one request | `Hardening.test.tsx` | Pass |
+| HARD-02 | UI | AC-37 | Create Ticket network failure and 500 | every value kept | `Hardening.test.tsx` | Pass |
+| HARD-03 | UI | AC-36, AC-37 | Comment composer double click, then a failure | one request; text kept | `Hardening.test.tsx` | Pass |
+| HARD-04 | UI | AC-37 | Staff Ticket Detail network failure and 500; a 400 still reverts | selections kept; reverted on 400 | `Hardening.test.tsx` | Pass |
+| HARD-05 | UI | AC-36 | Staff Ticket Detail Save double click | one request, busy label | `Hardening.test.tsx` | Pass |
+| HARD-06 | UI | AC-36, AC-37, AC-28 | User Management opened with `?role=`, create double click, then a failure | filtered; one request; fields kept | `Hardening.test.tsx` | Pass |
 
 ### 2.8 UI style — `client/tests/lab-04/zen-green.lab4.style.test.tsx`
 
 | Test ID | Type | AC | What it tests | Expected result | Automated test file | Final |
 |---|---|---|---|---|---|---|
-| STYLE-01 | STYLE | AC-44 | Dashboard and Actions Taken use only declared tokens | no hard-coded colour | `zen-green.lab4.style.test.tsx` | Pending |
-| STYLE-02 | STYLE | AC-43 | Action status and follow-up badges | text present for every value | `zen-green.lab4.style.test.tsx` | Pending |
-| STYLE-03 | STYLE | AC-42 | Metric View links | accessible names include the metric | `zen-green.lab4.style.test.tsx` | Pending |
-| STYLE-04 | STYLE | AC-44 | Performed by field | read-only surface class | `zen-green.lab4.style.test.tsx` | Pending |
+| STYLE-01 | STYLE | AC-44 | Dashboard and Actions Taken use only declared tokens | no hard-coded colour | `zen-green.lab4.style.test.tsx` | Pass |
+| STYLE-02 | STYLE | AC-43 | Action status and follow-up badges | text present for every value | `zen-green.lab4.style.test.tsx` | Pass |
+| STYLE-03 | STYLE | AC-42 | Metric View links | accessible names include the metric | `zen-green.lab4.style.test.tsx` | Pass |
+| STYLE-04 | STYLE | AC-44 | Performed by field | read-only surface class | `zen-green.lab4.style.test.tsx` | Pass |
 
 ### 2.9 Responsive and end-to-end — `e2e/lab-04/`
 
 | Test ID | Type | AC | What it tests | Expected result | Automated test file | Final |
 |---|---|---|---|---|---|---|
-| RESP-01 | RESP | AC-41 | Requester, IT Staff and Administrator dashboards at 1280, 820, 390 | no horizontal scroll, nothing wider than the viewport | `responsive.spec.ts` | Pending |
-| RESP-02 | RESP | AC-41 | Actions Taken list and form at the three widths | same; table becomes cards below 768 px | `responsive.spec.ts` | Pending |
-| RESP-03 | RESP | AC-38 | Every Lab 2–4 screen | no console errors, no placeholder text | `responsive.spec.ts` | Pending |
-| RESP-04 | RESP | AC-44 | Screenshot capture of the three folders at three widths | files written | `responsive.spec.ts` | Pending |
-| E2E-01 | E2E | AC-01 | IT Staff adds an action assigned to a colleague, starts and completes it | list shows performer, assignee and Completed | `actions-taken-flow.spec.ts` | Pending |
-| E2E-02 | E2E | AC-11 | A second IT Staff member adds a different action on the same Ticket | both visible with their own people | `actions-taken-flow.spec.ts` | Pending |
-| E2E-03 | E2E | AC-08 | Cancel an action with a reason through the dialog | Cancelled with reason, no edit controls | `actions-taken-flow.spec.ts` | Pending |
-| E2E-04 | E2E | AC-04 | Assignee list excludes inactive users; API rejects an inactive id | rejected | `actions-taken-flow.spec.ts` | Pending |
-| E2E-05 | E2E | AC-13 | Requester opens the Ticket | sees the actions read-only, no Internal Notes | `actions-taken-flow.spec.ts` | Pending |
-| E2E-06 | E2E | AC-14 | Try to resolve with an incomplete action | blocked callout lists it; status unchanged | `ticket-resolution.spec.ts` | Pending |
-| E2E-07 | E2E | AC-15 | Complete it, clear the follow-up, resolve, then close | each step succeeds | `ticket-resolution.spec.ts` | Pending |
-| E2E-08 | E2E | AC-17 | Two browser contexts edit the same Ticket | second save shows the stale warning and keeps input | `ticket-resolution.spec.ts` | Pending |
-| E2E-09 | E2E | AC-22 | Requester says resolved; staff sees marker; status unchanged | as stated | `ticket-resolution.spec.ts` | Pending |
-| E2E-10 | E2E | AC-34 | Each role signs in and lands on its dashboard | correct dashboard and navigation | `dashboards.spec.ts` | Pending |
-| E2E-11 | E2E | AC-28 | Click Unassigned and Owned by me on the staff dashboard | queue shows the same totals | `dashboards.spec.ts` | Pending |
-| E2E-12 | E2E | AC-28 | Click Waiting for me on the Requester dashboard | My Tickets shows the same total | `dashboards.spec.ts` | Pending |
-| E2E-13 | E2E | AC-26 | Administrator dashboard Users counts | match User Management filters | `dashboards.spec.ts` | Pending |
-| E2E-14 | E2E | AC-35 | Lab 2 and Lab 3 end-to-end suites | still pass | `e2e/lab-02`, `e2e/lab-03` | Pending |
+| RESP-01 | RESP | AC-41 | Requester, IT Staff and Administrator dashboards at 1280, 820, 390 | no horizontal scroll, nothing wider than the viewport | `responsive.spec.ts` | Pass |
+| RESP-02 | RESP | AC-41 | Actions Taken list and form at the three widths | same; table becomes cards below 768 px | `responsive.spec.ts` | Pass |
+| RESP-03 | RESP | AC-38 | Every Lab 2–4 screen | no console errors, no placeholder text | `responsive.spec.ts` | Pass |
+| RESP-04 | RESP | AC-44 | Screenshot capture of the three folders at three widths | files written | `responsive.spec.ts` | Pass |
+| E2E-01 | E2E | AC-01 | IT Staff adds an action assigned to a colleague, starts and completes it | list shows performer, assignee and Completed | `actions-taken-flow.spec.ts` | Pass |
+| E2E-02 | E2E | AC-11 | A second IT Staff member adds a different action on the same Ticket | both visible with their own people | `actions-taken-flow.spec.ts` | Pass |
+| E2E-03 | E2E | AC-08 | Cancel an action with a reason through the dialog | Cancelled with reason, no edit controls | `actions-taken-flow.spec.ts` | Pass |
+| E2E-04 | E2E | AC-04 | Assignee list excludes inactive users; API rejects an inactive id | rejected | `actions-taken-flow.spec.ts` | Pass |
+| E2E-05 | E2E | AC-13 | Requester opens the Ticket | sees the actions read-only, no Internal Notes | `actions-taken-flow.spec.ts` | Pass |
+| E2E-06 | E2E | AC-14 | Try to resolve with an incomplete action | blocked callout lists it; status unchanged | `ticket-resolution.spec.ts` | Pass |
+| E2E-07 | E2E | AC-15 | Complete it, clear the follow-up, resolve, then close | each step succeeds | `ticket-resolution.spec.ts` | Pass |
+| E2E-08 | E2E | AC-17 | Two browser contexts edit the same Ticket | second save shows the stale warning and keeps input | `ticket-resolution.spec.ts` | Pass |
+| E2E-09 | E2E | AC-22 | Requester says resolved; staff sees marker; status unchanged | as stated | `ticket-resolution.spec.ts` | Pass |
+| E2E-10 | E2E | AC-34 | Each role signs in and lands on its dashboard | correct dashboard and navigation | `dashboards.spec.ts` | Pass |
+| E2E-11 | E2E | AC-28 | Click Unassigned and Owned by me on the staff dashboard | queue shows the same totals | `dashboards.spec.ts` | Pass |
+| E2E-12 | E2E | AC-28 | Click Waiting for me on the Requester dashboard | My Tickets shows the same total | `dashboards.spec.ts` | Pass |
+| E2E-13 | E2E | AC-26 | Administrator dashboard Users counts | match User Management filters | `dashboards.spec.ts` | Pass |
+| E2E-14 | E2E | AC-35 | Lab 2 and Lab 3 end-to-end suites | still pass | `e2e/lab-02`, `e2e/lab-03` | Pass |
 
 ## 3. Acceptance-Criterion Traceability
 
@@ -259,8 +259,24 @@ PERF), 10 staff dashboard (incl. 2 PERF), 6 migration/regression, 27 UI componen
 
 ## 4. Responsive, Visual and Accessibility Checklist
 
-The eleven checks in [ui-spec.md](ui-spec.md) §10, at 1280, 820 and 390 px. Results recorded here in
-Issue 7.
+The eleven checks in [ui-spec.md](ui-spec.md) §10, at 1280, 820 and 390 px, on the Requester, IT Staff
+and Administrator dashboards, the IT Staff Ticket Detail (Actions Taken list and form) and the
+Requester Ticket Detail, plus the Lab 2 and Lab 3 screens through their own responsive suites.
+Screenshots: `artifacts/lab-04/screenshots/{requester-dashboard,staff-dashboard,actions-taken}/`.
+
+| # | Check | Result | Evidence |
+|---|---|---|---|
+| 1 | Design consistency: only Lab 2/3 tokens, spacing and button hierarchy | Pass | STYLE-01 (no hard-coded colour in the Lab 4 components or stylesheet section, no inline style) |
+| 2 | Dashboards: every card labelled, values readable, every View link correct | Pass | UI-19, UI-21, UI-23, UI-25, E2E-11 … E2E-13 |
+| 3 | Actions Taken: list order stable, statuses distinguishable without colour | Pass | API-14, UI-01, STYLE-02 |
+| 4 | Editable versus read-only fields distinct (Performed by is read-only) | Pass | STYLE-04, UI-02 |
+| 5 | Validation messages under their field and announced | Pass | UI-03 (`aria-invalid`, `aria-describedby`, `role="alert"`) |
+| 6 | Keyboard focus visible on every control, dialogs trap and return focus | Pass | UI-05 and the Tab-cycle test, E2E-03 (reason field focused on open) |
+| 7 | No clipping of text, badges or buttons | Pass | RESP-01, RESP-02 screenshots; the tablet Actions Taken layout was fixed in Issue 7 after the screenshot showed words broken letter by letter |
+| 8 | No overlap of cards, lists, tabs or forms | Pass | RESP-01, RESP-02 (nothing wider than the viewport outside a scroller) |
+| 9 | No horizontal page scroll | Pass | RESP-01, RESP-02 at all three widths; the 59 px tablet overflow found here was fixed in Issue 7 |
+| 10 | Busy, success, empty, no-results, forbidden, conflict and failure states render | Pass | UI-08 … UI-10, UI-13, UI-14, UI-20, UI-22, UI-27, HARD-01 … HARD-06, E2E-06, E2E-08 |
+| 11 | No obsolete, duplicate or placeholder UI left from earlier labs | Pass | RESP-03 (console and placeholder sweep of every Lab 2–4 screen), Issue 6 audit (`/system-check` kept as a documented diagnostic page) |
 
 ## 5. Test Commands
 
@@ -272,7 +288,50 @@ npx playwright test          # responsive and end-to-end
 
 ## 6. Final Results
 
-Filled in from a real run on `main` in Issue 7.
+Recorded from a full run on 2026-10-31 (05:34 UTC) of `feature/lab4-7-e2e-docs`, which is
+`lab4-staging` plus this Issue; the log is
+[`artifacts/lab-04/final-run.log`](../../artifacts/lab-04/final-run.log). The same suites are run again
+on `main` after the release merge.
+
+| Suite | Files | Tests | Result |
+|---|---|---|---|
+| Server — unit, API, workflow, dashboard, PERF, migration/recovery (Labs 1–4) | 31 | 332 | 332 passed |
+| Client — UI component and style (Labs 1–4) | 20 | 186 | 186 passed |
+| Playwright — responsive and end-to-end (Labs 2–4) | 10 | 64 | 64 passed |
+| **Total** | **61** | **582** | **582 passed, 0 failed** |
+
+Lab 4's own share is 162 tests: 88 server, 53 client, 21 Playwright. The other 420 are the Lab 1–3
+suites, all still passing (AC-35, BR-42). Every planned test ID in §2, including the six HARD rows
+added in Issue 6, has an automated test and passed in this run.
+
+The client production build (`tsc --noEmit && vite build`) also succeeded.
+
+### Earlier tests changed in Lab 4, and why
+
+| Change | Reason | Pull Request |
+|---|---|---|
+| Administrator write cases in `server/tests/lab-03/staff-ticket-detail.api.test.ts` and `client/tests/lab-03/StaffTicketDetail.test.tsx` flipped from refused to allowed | BR-26 / D-05: Administrators perform IT Staff behaviour, replacing Lab 3 D-10 | #57, #59 |
+| Lab 3 staff PATCH helpers send the stored `version` | BR-24: version is required on every ticket write | #59 |
+| `assignable-users` key check includes `role` | api-spec.md §4.2 | #58 |
+| Landing assertions in `Login`, `ChangePassword`, `AppShell.role` and the e2e sign-in helper expect the dashboard | AC-34: each role lands on its dashboard | #60 |
+| The Lab 3 staff-queue responsive check waits for the queue before reading it | It was flaky, not wrong; found in Issue 4 | #60 |
+| Lab 2 and Lab 3 detail-screen component tests stub the new actions request | The screens now load Actions Taken; no assertion changed | #58 |
+
+### Defects the Lab 4 suites found
+
+| Found by | Defect | Fixed in |
+|---|---|---|
+| Building the Issue 3 assignee select | `assignable-users` was missing `role` | #58 |
+| Issue 4 regression run | Lab 3 queue responsive check read the page while it was still loading | #60 |
+| RESP-02 at 820 px | The Actions Taken table scrolled the page sideways by 59 px; the first fix broke words letter by letter | this Issue |
+| E2E-07 | A ticket Save right after an action Save raced the version re-read and reported the screen's own change as stale | this Issue |
+
+### Environment note
+
+The first attempt at this run had three PERF failures and two timing-sensitive component failures.
+They were caused by unrelated load on the development machine — a `stress-ng` container and eleven
+CPU-bound Python processes, load average above 100 — not by TokTickIT: the database held 62 tickets
+and at most 4 actions per ticket. With that load stopped, every test passed, PERF included.
 
 ## 7. Known Limitations
 
