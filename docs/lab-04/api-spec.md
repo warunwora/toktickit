@@ -212,6 +212,7 @@ Requester only. `:me` is the session user.
   "recentlyUpdated": [ { "id": 281, "ticketNumber": "TKT-2026-000281", "summary": "…",
                          "status": "IN_PROGRESS", "updatedAt": "…" } ],
   "recentlyResolved": [],
+  "links": { "open": "/tickets?statusGroup=active", "…": "…" },
   "generatedAt": "2026-10-30T03:45:00.000Z"
 }
 ```
@@ -233,6 +234,13 @@ IT Staff and Administrator. `:me` is the session user.
 | `users` (Administrator only) | `SELECT role, "isActive", COUNT(*) FROM "User" GROUP BY role, "isActive"` | `/admin/users?role=:role` |
 
 IT Staff never receive `users`; the field is absent, not empty.
+
+### 5.2a Drill-down links in the response
+
+Both responses carry a `links` object holding the drill-down URLs of the tables above, built by the
+server (`server/src/lib/dashboard.ts`), so the screens never assemble a URL themselves (BR-36). Each
+`myOpenActionsList` item carries its own `link`, and each `users` role carries its `link`. The links
+are part of the summary, not data; DR-07 and U-10 pin them.
 
 ### 5.3 Empty behaviour
 

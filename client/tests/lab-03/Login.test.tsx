@@ -24,9 +24,10 @@ function renderLogin() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/tickets" element={<h1>My Tickets</h1>} />
+          {/* Lab 4 AC-34 — every role now lands on its dashboard. */}
+          <Route path="/dashboard" element={<h1>Requester Dashboard</h1>} />
           <Route path="/account" element={<h1>Your account</h1>} />
-          <Route path="/staff/queue" element={<h1>Ticket Queue</h1>} />
+          <Route path="/staff/dashboard" element={<h1>Staff Dashboard</h1>} />
           <Route path="/change-password" element={<h1>Change Your Password</h1>} />
         </Routes>
       </AuthProvider>
@@ -109,15 +110,15 @@ describe("Login", () => {
     expect(busy).toBeDisabled();
 
     resolve({ user: REQUESTER });
-    await screen.findByRole("heading", { name: "My Tickets" });
+    await screen.findByRole("heading", { name: "Requester Dashboard" });
   });
 
   // UI-05 / AC-01
   it("sends each role to its own landing screen", async () => {
     const cases: [authApi.AuthUser, string][] = [
-      [REQUESTER, "My Tickets"],
-      [IT_STAFF, "Ticket Queue"],
-      [ADMINISTRATOR, "Ticket Queue"],
+      [REQUESTER, "Requester Dashboard"],
+      [IT_STAFF, "Staff Dashboard"],
+      [ADMINISTRATOR, "Staff Dashboard"],
     ];
 
     for (const [user, heading] of cases) {

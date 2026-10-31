@@ -19,11 +19,11 @@ export const ROLE_LABEL: Record<RoleName, string> = {
   ADMINISTRATOR: "Administrator",
 };
 
-/** Where each role starts after signing in (docs/lab-03/ui-spec.md §4). */
+/** Where each role starts after signing in: its dashboard (Lab 4 ui-spec.md §1, AC-34). */
 export const ROLE_HOME: Record<RoleName, string> = {
-  REQUESTER: "/tickets",
-  IT_STAFF: "/staff/queue",
-  ADMINISTRATOR: "/staff/queue",
+  REQUESTER: "/dashboard",
+  IT_STAFF: "/staff/dashboard",
+  ADMINISTRATOR: "/staff/dashboard",
 };
 
 export function login(email: string, password: string): Promise<{ user: AuthUser }> {
