@@ -1059,3 +1059,131 @@ a:focus-visible {
     display: block;
   }
 }
+
+/* ===========================================================================
+   Lab 4 — docs/lab-04/ui-spec.md
+   No new colour token: every rule below reuses the Lab 2 palette.
+   =========================================================================== */
+
+/* ---------- Actions Taken (§3, §4, §9) ---------- */
+
+.zg-actions .zg-thread-head {
+  margin-bottom: var(--zg-space-3);
+}
+
+.zg-actions-table td {
+  vertical-align: top;
+}
+
+.zg-actions-table td[data-label="Action Date/Time"] {
+  white-space: nowrap;
+}
+
+.zg-action-description {
+  overflow-wrap: anywhere;
+}
+
+/* The description and its detail are the reading content; the other columns
+   are short labels, so the description takes the spare width on wide screens. */
+@media (min-width: 768px) {
+  .zg-action-description {
+    width: 40%;
+  }
+}
+
+.zg-action-detail {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--zg-space-1) var(--zg-space-3);
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.zg-action-detail dt {
+  color: var(--zg-text-muted);
+  font-weight: 600;
+}
+
+.zg-action-detail dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.zg-action-person {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--zg-space-1);
+}
+
+.zg-action-assignee {
+  display: block;
+}
+
+.zg-action-hint {
+  display: block;
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 767px) {
+  .zg-action-assignee {
+    text-align: right;
+  }
+}
+
+.zg-action-badges,
+.zg-action-buttons {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--zg-space-2);
+}
+
+.zg-action-form {
+  margin-top: var(--zg-space-4);
+  padding-top: var(--zg-space-4);
+  border-top: 1px solid var(--zg-border);
+}
+
+.zg-counter {
+  display: block;
+  text-align: right;
+  font-size: 0.8125rem;
+  color: var(--zg-text-muted);
+}
+
+.zg-badge-action-planned,
+.zg-badge-action-cancelled {
+  background: var(--zg-readonly-bg);
+  color: var(--zg-text-muted);
+}
+
+.zg-badge-action-in-progress {
+  background: var(--zg-secondary);
+  color: #ffffff;
+  border-color: var(--zg-secondary);
+}
+
+.zg-badge-action-completed {
+  background: var(--zg-success-bg);
+  color: var(--zg-success);
+  border-color: var(--zg-success);
+}
+
+.zg-badge-follow-up {
+  background: var(--zg-warning-bg);
+  color: var(--zg-warning);
+  border-color: var(--zg-warning);
+}
+
+/* Below 768 px the shared .zg-table rules turn each action into a card; the
+   long cells stack instead of sitting beside their label. */
+@media (max-width: 767px) {
+  .zg-actions-table td.zg-action-description,
+  .zg-actions-table td[data-label="Actions"] {
+    flex-direction: column;
+  }
+
+  .zg-action-buttons .zg-btn {
+    min-height: 44px;
+  }
+}

@@ -141,14 +141,15 @@ const staffWrite = requireRole("IT_STAFF", "ADMINISTRATOR");
  * The people a ticket or an action may be assigned to: active IT Staff and
  * Administrators (Lab 4 BR-04, BR-27). The Owner select needs this
  * list and the Administrator user endpoints are closed to IT Staff, so the
- * queue serves its own narrow, non-sensitive projection: id and name only.
+ * queue serves its own narrow, non-sensitive projection: id, name and role.
  */
 staffRouter.get("/api/staff/assignable-users", staffRead, async (_req: Request, res: Response) => {
   try {
     const users = await getPrisma().user.findMany({
       where: { role: { in: ["IT_STAFF", "ADMINISTRATOR"] }, isActive: true },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      // api-spec.md §4.2 — the role lets both selects tell an Administrator apart.
+      select: { id: true, name: true, role: true },
     });
     res.status(200).json({ users });
   } catch {

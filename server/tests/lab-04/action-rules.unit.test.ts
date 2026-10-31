@@ -54,6 +54,11 @@ describe("Action Date/Time (BR-05)", () => {
     expect(fieldsOf({ ...VALID, actionAt: minutesFromNow(6) })).toEqual(["actionAt"]);
     expect(fieldsOf({ ...VALID, actionAt: minutesFromNow(4) })).toEqual([]);
     expect(fieldsOf({ ...VALID, actionAt: "2026-10-29T09:59:59.000Z" })).toEqual(["actionAt"]);
+    // The same minute as the ticket is not "before" it: the control holds whole minutes.
+    expect(validateActionFields(mergeActionFields(EMPTY_ACTION, VALID), VALID, {
+      now: NOW,
+      ticketCreatedAt: new Date("2026-10-30T09:00:40.000Z"),
+    })).toEqual([]);
     expect(fieldsOf({ description: VALID.description })).toEqual(["actionAt"]);
   });
 

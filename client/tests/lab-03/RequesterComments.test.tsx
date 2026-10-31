@@ -7,6 +7,7 @@ import * as conversation from "../../src/api/conversation.js";
 import { AuthProvider } from "../../src/context/AuthContext.js";
 import RequesterTicketDetail from "../../src/pages/RequesterTicketDetail.js";
 import { REQUESTER, signedInAs } from "../helpers/auth.js";
+import * as actionsApi from "../../src/api/actions.js";
 
 // UI-32 … UI-35 — docs/lab-03/tests.md §2.9
 
@@ -43,6 +44,8 @@ function entry(overrides: Partial<conversation.ConversationEntry> = {}): convers
 }
 
 beforeEach(() => {
+  // Lab 4 added an Actions Taken request to this screen; it is not under test here.
+  vi.spyOn(actionsApi, "listActions").mockResolvedValue([]);
   signedInAs(REQUESTER);
 });
 

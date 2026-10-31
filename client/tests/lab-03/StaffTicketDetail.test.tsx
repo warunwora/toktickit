@@ -8,6 +8,7 @@ import { ApiError } from "../../src/api/client.js";
 import { AuthProvider } from "../../src/context/AuthContext.js";
 import StaffTicketDetail from "../../src/pages/StaffTicketDetail.js";
 import { ADMINISTRATOR, IT_STAFF, signedInAs } from "../helpers/auth.js";
+import * as actionsApi from "../../src/api/actions.js";
 
 // UI-24 … UI-31 — docs/lab-03/tests.md §2.9
 
@@ -48,6 +49,8 @@ function entry(overrides: Partial<conversation.ConversationEntry> = {}): convers
 }
 
 beforeEach(() => {
+  // Lab 4 added an Actions Taken request to this screen; it is not under test here.
+  vi.spyOn(actionsApi, "listActions").mockResolvedValue([]);
   signedInAs(IT_STAFF);
   vi.spyOn(staffApi, "getAssignableUsers").mockResolvedValue([
     { id: 26, name: "Warin Chaiyaporn" },

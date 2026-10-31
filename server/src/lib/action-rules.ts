@@ -55,6 +55,14 @@ export function actionTransitionMessage(from: ActionStatusValue): string {
   return `This action is ${ACTION_STATUS_LABEL[from]}; it can move to ${list}.`;
 }
 
+/**
+ * The Action Date/Time control holds whole minutes, so an action recorded in
+ * the same minute the ticket was created must not count as "before" it.
+ */
+function startOfMinute(value: Date): number {
+  return Math.floor(value.getTime() / 60_000) * 60_000;
+}
+
 /** The stored shape of every field the rules decide on. */
 export interface ActionFields {
   actionAt: Date | null;
@@ -124,7 +132,7 @@ export function validateActionFields(
       errors.push({ field: "actionAt", message: "Action Date/Time is required" });
     } else if (fields.actionAt.getTime() > context.now.getTime() + FUTURE_TOLERANCE_MS) {
       errors.push({ field: "actionAt", message: "Action Date/Time cannot be in the future" });
-    } else if (fields.actionAt.getTime() < context.ticketCreatedAt.getTime()) {
+    } else if (fields.actionAt.getTime() < startOfMinute(context.ticketCreatedAt)) {
       errors.push({ field: "actionAt", message: "Action Date/Time cannot be earlier than the ticket" });
     }
   }
