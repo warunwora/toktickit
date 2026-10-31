@@ -49,11 +49,25 @@ async function makeTicket(options: { status?: TicketStatusValue; ownerId?: numbe
   return draft.id;
 }
 
-const patchOwner = (id: number, body: object, userId = staffId) =>
-  request(app).patch(`/api/staff/tickets/${id}/owner`).set("Cookie", cookie(userId)).send(body);
+// Lab 4 BR-24 made `version` required on both writes. These Lab 3 helpers send
+// the stored one, so every Lab 3 assertion keeps testing what it tested before;
+// the stale-version cases live in tests/lab-04/ticket-workflow.api.test.ts.
+async function currentVersion(id: number): Promise<number | undefined> {
+  const ticket = await prisma.ticket.findUnique({ where: { id }, select: { version: true } });
+  return ticket?.version;
+}
 
-const patchTicket = (id: number, body: object, userId = staffId) =>
-  request(app).patch(`/api/staff/tickets/${id}`).set("Cookie", cookie(userId)).send(body);
+const patchOwner = async (id: number, body: object, userId = staffId) =>
+  request(app)
+    .patch(`/api/staff/tickets/${id}/owner`)
+    .set("Cookie", cookie(userId))
+    .send({ version: await currentVersion(id), ...body });
+
+const patchTicket = async (id: number, body: object, userId = staffId) =>
+  request(app)
+    .patch(`/api/staff/tickets/${id}`)
+    .set("Cookie", cookie(userId))
+    .send({ version: await currentVersion(id), ...body });
 
 beforeAll(async () => {
   const [staff, otherStaff, admin, requester, category, relatedSystem] = await Promise.all([

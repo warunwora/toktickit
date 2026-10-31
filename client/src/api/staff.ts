@@ -44,6 +44,8 @@ export interface StaffTicket extends QueueTicket {
   attachments: Attachment[];
   comments: TicketEntry[];
   notes: TicketEntry[];
+  /** Lab 4 — sent back on every write (api-spec.md §1.2). */
+  version: number;
 }
 
 export const QUEUE_SORT_FIELDS = ["createdAt", "updatedAt", "ticketNumber", "itPriority", "status"] as const;
@@ -88,12 +90,15 @@ export function getAssignableUsers(): Promise<AssignableUser[]> {
   return apiFetch<{ users: AssignableUser[] }>("/api/staff/assignable-users").then((body) => body.users);
 }
 
-/** `null` releases the ticket back to unassigned; claiming is assigning oneself. */
-export function updateOwner(ticketId: number, ownerId: number | null): Promise<StaffTicket> {
+/**
+ * `null` releases the ticket back to unassigned; claiming is assigning oneself.
+ * `version` is the one on screen; a stale one answers 409 STALE_UPDATE.
+ */
+export function updateOwner(ticketId: number, version: number, ownerId: number | null): Promise<StaffTicket> {
   return apiFetch<StaffTicket>(`/api/staff/tickets/${ticketId}/owner`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ownerId }),
+    body: JSON.stringify({ version, ownerId }),
   });
 }
 
@@ -103,10 +108,22 @@ export interface TicketOperationPayload {
   resolutionSummary?: string;
 }
 
-export function updateStaffTicket(ticketId: number, payload: TicketOperationPayload): Promise<StaffTicket> {
+export function updateStaffTicket(
+  ticketId: number,
+  version: number,
+  payload: TicketOperationPayload
+): Promise<StaffTicket> {
   return apiFetch<StaffTicket>(`/api/staff/tickets/${ticketId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, version }),
   });
+}
+
+/** One entry of a 409 RESOLUTION_BLOCKED body (api-spec.md §4.1). */
+export interface BlockingAction {
+  id: number;
+  description: string;
+  status: string;
+  reason: "INCOMPLETE" | "FOLLOW_UP_OPEN";
 }

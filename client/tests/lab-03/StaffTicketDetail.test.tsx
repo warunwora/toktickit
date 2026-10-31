@@ -34,6 +34,7 @@ function staffTicket(overrides: Partial<staffApi.StaffTicket> = {}): staffApi.St
     attachments: [],
     comments: [],
     notes: [],
+    version: 1,
     ...overrides,
   };
 }
@@ -97,7 +98,7 @@ describe("IT Staff Ticket Detail — ownership", () => {
     await renderDetail();
     await userEvent.click(screen.getByRole("button", { name: "Claim this ticket" }));
 
-    expect(updateOwner).toHaveBeenCalledWith(42, 26);
+    expect(updateOwner).toHaveBeenCalledWith(42, 1, 26);
     await waitFor(() =>
       expect(screen.queryByRole("button", { name: "Claim this ticket" })).not.toBeInTheDocument()
     );
@@ -117,7 +118,7 @@ describe("IT Staff Ticket Detail — ownership", () => {
     await userEvent.selectOptions(screen.getByLabelText("Ticket Owner"), "27");
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
-    expect(updateOwner).toHaveBeenCalledWith(42, 27);
+    expect(updateOwner).toHaveBeenCalledWith(42, 1, 27);
   });
 
   it("shows the field message when the API refuses an owner", async () => {
@@ -146,7 +147,7 @@ describe("IT Staff Ticket Detail — priority and status", () => {
     await userEvent.selectOptions(screen.getByLabelText("IT Priority"), "LOW");
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
-    expect(update).toHaveBeenCalledWith(42, { itPriority: "LOW" });
+    expect(update).toHaveBeenCalledWith(42, 1, { itPriority: "LOW" });
     expect(screen.queryByRole("combobox", { name: "Requested Priority" })).not.toBeInTheDocument();
     expect(within(screen.getByLabelText("Ticket information")).getByText("High")).toBeInTheDocument();
   });
@@ -205,7 +206,7 @@ describe("IT Staff Ticket Detail — priority and status", () => {
     await userEvent.type(screen.getByLabelText(/Resolution Summary/), "Re-enrolled the certificate.");
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
-    expect(update).toHaveBeenCalledWith(42, {
+    expect(update).toHaveBeenCalledWith(42, 1, {
       status: "RESOLVED",
       resolutionSummary: "Re-enrolled the certificate.",
     });
@@ -241,7 +242,7 @@ describe("IT Staff Ticket Detail — priority and status", () => {
     await userEvent.click(screen.getByRole("button", { name: "Yes, move to Closed" }));
 
     // Only the status is sent: the stored resolution summary did not change.
-    expect(update).toHaveBeenCalledWith(42, { status: "CLOSED" });
+    expect(update).toHaveBeenCalledWith(42, 1, { status: "CLOSED" });
   });
 
   // UI-31 / AC-35
@@ -333,16 +334,17 @@ describe("IT Staff Ticket Detail — conversation", () => {
 });
 
 describe("IT Staff Ticket Detail — Administrator", () => {
-  // BR-24 / D-10
-  it("lets an Administrator read and add a note but never operate the workflow", async () => {
+  // Lab 4 BR-26 reverses Lab 3 BR-24 / D-10: an Administrator now operates the
+  // workflow like IT Staff. The full Lab 4 case is UI-17 in TicketWorkflow.test.tsx.
+  it("lets an Administrator operate the workflow and add a note", async () => {
     signedInAs(ADMINISTRATOR);
     await renderDetail();
 
-    expect(screen.queryByRole("button", { name: "Save changes" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Claim this ticket" })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Status")).toBeDisabled();
-    expect(screen.getByLabelText("IT Priority")).toBeDisabled();
-    expect(screen.getByLabelText("Ticket Owner")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Claim this ticket" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Status")).toBeEnabled();
+    expect(screen.getByLabelText("IT Priority")).toBeEnabled();
+    expect(screen.getByLabelText("Ticket Owner")).toBeEnabled();
 
     await userEvent.click(screen.getByRole("tab", { name: /Internal Notes/ }));
     const notes = screen.getByRole("region", { name: "Internal Notes" });

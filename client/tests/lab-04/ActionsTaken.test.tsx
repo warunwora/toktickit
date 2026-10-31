@@ -41,6 +41,7 @@ function staffTicket(overrides: Partial<staffApi.StaffTicket> = {}): staffApi.St
     attachments: [],
     comments: [],
     notes: [],
+    version: 1,
     ...overrides,
   };
 }
