@@ -6,7 +6,9 @@
 Repository: https://github.com/warunwora/toktickit
 Project board: https://github.com/users/warunwora/projects/1
 Branch flow: `feature/*` → `lab4-staging` → `main`. No commit was made directly on `main` or
-`lab4-staging`; every change reached them through a reviewed Pull Request.
+`lab4-staging`; every change reached them through a reviewed Pull Request. The release Pull Request
+is opened from `release/lab4`, which is `lab4-staging` plus the one documentation commit that records
+the PR #62 review — a review that could not exist until #62 had been merged.
 
 Sprint 4 was planned as seven Issues and one release before any code was written, and it shipped as
 exactly that. Each Pull Request title is its Issue's title. The next Issue was only started after the
@@ -25,11 +27,11 @@ previous Pull Request had been approved and merged, checked with
 | [#59](https://github.com/warunwora/toktickit/pull/59) | [#52](https://github.com/warunwora/toktickit/issues/52) Ticket workflow, resolution gate and stale updates | `feature/lab4-4-workflow` | `lab4-staging` | Approved |
 | [#60](https://github.com/warunwora/toktickit/pull/60) | [#53](https://github.com/warunwora/toktickit/issues/53) Role dashboards | `feature/lab4-5-dashboards` | `lab4-staging` | Approved |
 | [#61](https://github.com/warunwora/toktickit/pull/61) | [#54](https://github.com/warunwora/toktickit/issues/54) Final regression and hardening | `feature/lab4-6-hardening` | `lab4-staging` | Approved |
-| this PR | [#55](https://github.com/warunwora/toktickit/issues/55) End-to-end tests, evidence and final documentation | `feature/lab4-7-e2e-docs` | `lab4-staging` | Under review |
-| release | — Lab 4 release | `lab4-staging` | `main` | Not yet opened |
+| [#62](https://github.com/warunwora/toktickit/pull/62) | [#55](https://github.com/warunwora/toktickit/issues/55) End-to-end tests, evidence and final documentation | `feature/lab4-7-e2e-docs` | `lab4-staging` | Approved |
+| release | — Lab 4 release | `release/lab4` | `main` | Under review |
 
-Eight Pull Requests, the number the sprint was planned with. The last two rows are completed once
-their reviews exist; nothing is recorded here before it has happened.
+Eight Pull Requests, the number the sprint was planned with. The release row is completed once its
+review exists; nothing is recorded here before it has happened.
 
 ### Comments I received, and how I responded
 
@@ -70,6 +72,13 @@ follows each one and compares the list's total with the card (AC-28, E2E-11 … 
 
 My response: "yes thank u" — the drill in [recovery-drill.md](recovery-drill.md) compares a fingerprint
 of every Lab 3 ticket after each step, so "same" is measured, not eyeballed.
+
+**PR #62 — End-to-end tests, evidence and final documentation**
+> **@asamapornch:** e2e all pass, screenshots and docs look good. approve
+
+My response: "thanks bro" — the run behind "all pass" is recorded in `tests.md` §6 with its log:
+582 tests, 0 failed, including the 21 new Lab 4 end-to-end and responsive tests that found the
+version race and the tablet overflow fixed in that Pull Request.
 
 ---
 
