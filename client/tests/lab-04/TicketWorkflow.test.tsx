@@ -245,4 +245,25 @@ describe("Ticket workflow feedback", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(42, 8, { itPriority: "LOW" }));
   });
+
+  it("waits for that version when Save is pressed before the re-read returns", async () => {
+    vi.spyOn(actionsApi, "updateAction").mockResolvedValue({ ...planned, status: "COMPLETED", result: "Done.", version: 3 });
+    const load = await renderDetail();
+    const update = vi.spyOn(staffApi, "updateStaffTicket").mockResolvedValue(staffTicket({ itPriority: "LOW", version: 9 }));
+
+    let reread: (ticket: staffApi.StaffTicket) => void = () => {};
+    load.mockReturnValue(new Promise((resolve) => (reread = resolve)));
+    await userEvent.click(screen.getByRole("tab", { name: /Actions Taken/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Complete" }));
+    await userEvent.type(screen.getByLabelText(/^Result/), "Done.");
+    await userEvent.click(screen.getByRole("button", { name: "Save action" }));
+    await screen.findByText("Action saved.");
+
+    await userEvent.selectOptions(screen.getByLabelText("IT Priority"), "LOW");
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(update).not.toHaveBeenCalled();
+
+    reread(staffTicket({ version: 8 }));
+    await waitFor(() => expect(update).toHaveBeenCalledWith(42, 8, { itPriority: "LOW" }));
+  });
 });
