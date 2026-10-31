@@ -4,7 +4,7 @@ import { getPrisma } from "../prisma.js";
 import { currentUser, requireRole } from "../lib/auth.js";
 import { validateCreateTicket } from "../lib/validation.js";
 import { formatTicketNumber } from "../lib/ticket-number.js";
-import { parseTicketListQuery } from "../lib/query.js";
+import { ACTIVE_STATUSES, parseTicketListQuery } from "../lib/query.js";
 import { serializeAttachment } from "./attachments.js";
 
 // Requester ticket routes — contract: docs/lab-02/api-spec.md §3, re-identified
@@ -139,6 +139,7 @@ ticketsRouter.get("/api/tickets", requesterOnly, async (req: Request, res: Respo
     ...(query.relatedSystemId ? { relatedSystemId: query.relatedSystemId } : {}),
     ...(query.requestedPriority ? { requestedPriority: query.requestedPriority } : {}),
     ...(query.status ? { status: query.status } : {}),
+    ...(query.statusGroup ? { status: { in: [...ACTIVE_STATUSES] } } : {}),
     ...(query.search
       ? {
           OR: [

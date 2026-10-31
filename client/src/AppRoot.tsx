@@ -13,6 +13,8 @@ import UserManagement from "./pages/UserManagement.js";
 import CreateTicket from "./pages/CreateTicket.js";
 import RequesterTicketDetail from "./pages/RequesterTicketDetail.js";
 import App from "./App.js";
+import RequesterDashboard from "./pages/RequesterDashboard.js";
+import StaffDashboard from "./pages/StaffDashboard.js";
 
 /** Sends a signed-in person to the landing screen of their own role. */
 function RoleHome() {
@@ -58,6 +60,7 @@ export function AppRoutes() {
           </RequireAuth>
         }
       >
+        <Route path="/staff/dashboard" element={<StaffDashboard />} />
         <Route path="/staff/queue" element={<StaffTicketQueue />} />
         <Route path="/staff/tickets/:id" element={<StaffTicketDetail />} />
       </Route>
@@ -79,6 +82,7 @@ export function AppRoutes() {
           </RequireAuth>
         }
       >
+        <Route path="/dashboard" element={<RequesterDashboard />} />
         <Route path="/tickets" element={<MyTickets />} />
         <Route path="/tickets/new" element={<CreateTicket />} />
         <Route path="/tickets/:id" element={<RequesterTicketDetail />} />

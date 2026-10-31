@@ -1198,3 +1198,132 @@ a:focus-visible {
   color: inherit;
   font-weight: 600;
 }
+
+/* ---------- Dashboards (§2, §7) ---------- */
+
+.zg-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--zg-space-4);
+  margin-bottom: var(--zg-space-4);
+}
+
+.zg-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--zg-space-1);
+}
+
+.zg-metric-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--zg-text-muted);
+  margin: 0;
+}
+
+.zg-metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.zg-metric-empty {
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+.zg-metric-link {
+  margin-top: auto;
+  font-weight: 600;
+}
+
+.zg-metric-skeleton {
+  display: block;
+  width: 3rem;
+  height: 2.4rem;
+  border-radius: var(--zg-radius);
+  background: var(--zg-readonly-bg);
+}
+
+.zg-dashboard-users {
+  margin-bottom: var(--zg-space-4);
+}
+
+.zg-dashboard-lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--zg-space-4);
+}
+
+.zg-recent-list,
+.zg-breakdown {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.zg-recent-item {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: var(--zg-space-1) var(--zg-space-3);
+  padding: var(--zg-space-2) 0;
+  border-bottom: 1px solid var(--zg-border);
+}
+
+.zg-recent-item:last-child,
+.zg-breakdown-row:last-child {
+  border-bottom: none;
+}
+
+.zg-recent-number {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* One line with an ellipsis; the full text is in the title (§2). */
+.zg-recent-summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zg-recent-time {
+  grid-column: 1 / -1;
+  font-size: 0.8125rem;
+}
+
+.zg-breakdown-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  align-items: center;
+  gap: var(--zg-space-3);
+  padding: var(--zg-space-2) 0;
+  border-bottom: 1px solid var(--zg-border);
+}
+
+.zg-breakdown-row > .zg-badge {
+  justify-self: start;
+}
+
+.zg-breakdown-count {
+  font-weight: 700;
+  text-align: right;
+}
+
+@media (max-width: 991px) {
+  .zg-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .zg-dashboard-lists {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 599px) {
+  .zg-metric-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

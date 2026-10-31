@@ -54,6 +54,8 @@ export type QueueSortField = (typeof QUEUE_SORT_FIELDS)[number];
 export interface QueueQuery {
   search?: string;
   status?: TicketStatus | "";
+  /** Lab 4 api-spec.md §5.4 — "active" means the five active statuses. */
+  statusGroup?: "active" | "";
   categoryId?: number | "";
   itPriority?: Priority | "";
   ownerId?: number | "unassigned" | "";

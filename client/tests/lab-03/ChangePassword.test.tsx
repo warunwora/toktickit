@@ -24,7 +24,8 @@ function renderScreen() {
       <AuthProvider>
         <Routes>
           <Route path="/change-password" element={<ChangePassword />} />
-          <Route path="/tickets" element={<h1>My Tickets</h1>} />
+          {/* Lab 4 AC-34 — a Requester now lands on the dashboard. */}
+          <Route path="/dashboard" element={<h1>Requester Dashboard</h1>} />
         </Routes>
       </AuthProvider>
     </MemoryRouter>
@@ -119,7 +120,7 @@ describe("Change Password", () => {
 
     await fill("ChangeMe!2026", "Kmutt#2026x", "Kmutt#2026x");
 
-    expect(await screen.findByRole("heading", { name: "My Tickets" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Requester Dashboard" })).toBeInTheDocument();
   });
 
   it("states that the change is mandatory", async () => {

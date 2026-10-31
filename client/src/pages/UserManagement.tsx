@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ApiError } from "../api/client.js";
 import { RoleName, ROLE_LABEL, passwordSatisfiesRules } from "../api/auth.js";
 import {
@@ -51,7 +52,12 @@ export default function UserManagement() {
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<RoleName | "">("");
+  // Lab 4 — the Administrator dashboard links here filtered by role (?role=).
+  const [searchParams] = useSearchParams();
+  const [roleFilter, setRoleFilter] = useState<RoleName | "">(() => {
+    const role = searchParams.get("role") as RoleName | null;
+    return role && ROLE_OPTIONS.includes(role) ? role : "";
+  });
 
   const [state, setState] = useState<ListState>("loading");
   const [users, setUsers] = useState<ManagedUser[]>([]);

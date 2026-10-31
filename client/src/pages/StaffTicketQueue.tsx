@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ApiError } from "../api/client.js";
 import { getCategories, ReferenceItem } from "../api/reference.js";
 import { QueueQuery, QueueResponse, QueueSortField, getQueue } from "../api/staff.js";
@@ -8,6 +8,8 @@ import { PriorityBadge, StatusBadge } from "../components/Badges.js";
 import { useAuth } from "../context/AuthContext.js";
 
 // IT Staff Ticket Queue — docs/lab-03/ui-spec.md §5.4, api-spec.md §6.1.
+// Lab 4: opens with the filters in its URL, so a dashboard card's View link
+// lists exactly the tickets the card counted (BR-36, AC-28).
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -38,14 +40,35 @@ const COLUMNS: { field: QueueSortField | null; label: string }[] = [
   { field: "updatedAt", label: "Last Updated" },
 ];
 
+/** The status select's value for the active group; never a real status. */
+const ACTIVE_GROUP = "active";
+
 interface Filters {
-  status: TicketStatus | "";
+  status: TicketStatus | typeof ACTIVE_GROUP | "";
   categoryId: number | "";
   itPriority: Priority | "";
   ownerId: number | "unassigned" | "";
 }
 
 const EMPTY_FILTERS: Filters = { status: "", categoryId: "", itPriority: "", ownerId: "" };
+
+/** Reads the drill-down parameters a dashboard link may carry. */
+function filtersFromUrl(params: URLSearchParams): Filters {
+  const status = params.get("status") ?? "";
+  const itPriority = params.get("itPriority") ?? "";
+  const ownerId = params.get("ownerId") ?? "";
+  return {
+    status:
+      params.get("statusGroup") === ACTIVE_GROUP
+        ? ACTIVE_GROUP
+        : STATUS_OPTIONS.some((option) => option.value === status)
+          ? (status as TicketStatus)
+          : "",
+    categoryId: "",
+    itPriority: PRIORITY_OPTIONS.includes(itPriority as Priority) ? (itPriority as Priority) : "",
+    ownerId: ownerId === "unassigned" ? "unassigned" : /^\d+$/.test(ownerId) ? Number(ownerId) : "",
+  };
+}
 
 function formatDate(value: string): string {
   // A compact, unambiguous stamp: the queue has nine columns and cannot spend
@@ -55,12 +78,16 @@ function formatDate(value: string): string {
 
 export default function StaffTicketQueue() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-  const [sort, setSort] = useState<QueueSortField>("createdAt");
-  const [order, setOrder] = useState<"asc" | "desc">("desc");
+  const [filters, setFilters] = useState<Filters>(() => filtersFromUrl(searchParams));
+  const [sort, setSort] = useState<QueueSortField>(() => {
+    const requested = searchParams.get("sort") as QueueSortField | null;
+    return requested && COLUMNS.some((column) => column.field === requested) ? requested : "createdAt";
+  });
+  const [order, setOrder] = useState<"asc" | "desc">(() => (searchParams.get("order") === "asc" ? "asc" : "desc"));
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -92,7 +119,17 @@ export default function StaffTicketQueue() {
     let cancelled = false;
     setState("loading");
 
-    const query: QueueQuery = { search, ...filters, sort, order, page, pageSize };
+    const { status, ...rest } = filters;
+    const query: QueueQuery = {
+      search,
+      ...rest,
+      status: status === ACTIVE_GROUP ? "" : status,
+      statusGroup: status === ACTIVE_GROUP ? ACTIVE_GROUP : "",
+      sort,
+      order,
+      page,
+      pageSize,
+    };
 
     getQueue(query)
       .then((response) => {
@@ -181,9 +218,10 @@ export default function StaffTicketQueue() {
               id="queue-status"
               className="form-select zg-select"
               value={filters.status}
-              onChange={(event) => updateFilter("status", event.target.value as TicketStatus | "")}
+              onChange={(event) => updateFilter("status", event.target.value as Filters["status"])}
             >
               <option value="">All statuses</option>
+              <option value={ACTIVE_GROUP}>All active</option>
               {STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
