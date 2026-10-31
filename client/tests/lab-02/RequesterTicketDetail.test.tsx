@@ -7,6 +7,7 @@ import { ApiError } from "../../src/api/client.js";
 import { AuthProvider } from "../../src/context/AuthContext.js";
 import { REQUESTER, signedInAs } from "../helpers/auth.js";
 import RequesterTicketDetail from "../../src/pages/RequesterTicketDetail.js";
+import * as actionsApi from "../../src/api/actions.js";
 
 // UI-15, UI-16 — docs/lab-02/tests.md §2.3
 
@@ -30,6 +31,8 @@ const TICKET: ticketsApi.Ticket = {
 };
 
 beforeEach(() => {
+  // Lab 4 added an Actions Taken request to this screen; it is not under test here.
+  vi.spyOn(actionsApi, "listActions").mockResolvedValue([]);
   window.localStorage.clear();
   signedInAs(REQUESTER);
 });

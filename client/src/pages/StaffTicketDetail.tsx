@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../api/client.js";
 import { ConversationEntry, postComment, postNote } from "../api/conversation.js";
 import {
@@ -11,11 +11,13 @@ import {
   updateStaffTicket,
 } from "../api/staff.js";
 import { Attachment } from "../api/attachments.js";
+import { ActionTaken, listActions } from "../api/actions.js";
 import { Priority, TicketStatus } from "../api/tickets.js";
 import { CONFIRM_REQUIRED, STATUS_LABEL, allowedTransitions } from "../lib/transitions.js";
 import { PriorityBadge, StatusBadge } from "../components/Badges.js";
 import AttachmentSection from "../components/AttachmentSection.js";
 import ConversationThread from "../components/ConversationThread.js";
+import ActionsTaken from "../components/ActionsTaken.js";
 import { useAuth } from "../context/AuthContext.js";
 
 // IT Staff Ticket Detail — docs/lab-03/ui-spec.md §5.5, api-spec.md §6.2-§6.4.
@@ -23,9 +25,14 @@ import { useAuth } from "../context/AuthContext.js";
 // An Administrator reaches this screen to read it and to write Internal Notes,
 // but the operations panel is not theirs: claiming, prioritising and changing
 // status stay with IT Staff (BR-24, decision D-10).
+//
+// Lab 4 adds the Actions Taken tab (docs/lab-04/ui-spec.md §3), which both IT
+// Staff and Administrators write (BR-26); the page opens on it with ?tab=actions.
 
 type LoadState = "loading" | "ready" | "notFound" | "forbidden" | "failed";
-type Tab = "comments" | "notes" | "attachments";
+type Tab = "comments" | "notes" | "attachments" | "actions";
+
+const TABS: readonly Tab[] = ["comments", "notes", "attachments", "actions"];
 
 const PRIORITIES: Priority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
@@ -57,6 +64,9 @@ export default function StaffTicketDetail() {
   const ticketId = Number(id);
   const { user } = useAuth();
   const canOperate = user?.role === "IT_STAFF";
+  const canRecordActions = user?.role === "IT_STAFF" || user?.role === "ADMINISTRATOR";
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab") as Tab | null;
 
   const [state, setState] = useState<LoadState>("loading");
   const [ticket, setTicket] = useState<StaffTicket | null>(null);
@@ -66,7 +76,11 @@ export default function StaffTicketDetail() {
   const [comments, setComments] = useState<ConversationEntry[]>([]);
   const [notes, setNotes] = useState<ConversationEntry[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [tab, setTab] = useState<Tab>("comments");
+  const [tab, setTab] = useState<Tab>(requestedTab && TABS.includes(requestedTab) ? requestedTab : "comments");
+
+  const [actions, setActions] = useState<ActionTaken[]>([]);
+  const [actionsFailed, setActionsFailed] = useState(false);
+  const [actionsToken, setActionsToken] = useState(0);
 
   // The operations panel is a draft over the loaded ticket: nothing is sent
   // until Save, and a rejection restores every control (ui-spec.md §5.5).
@@ -122,11 +136,29 @@ export default function StaffTicketDetail() {
   }, [ticketId, reloadToken]);
 
   useEffect(() => {
-    if (!canOperate) return;
+    if (!Number.isInteger(ticketId)) return;
+    let cancelled = false;
+    listActions(ticketId)
+      .then((loaded) => {
+        if (cancelled) return;
+        setActions(loaded);
+        setActionsFailed(false);
+      })
+      .catch(() => {
+        if (!cancelled) setActionsFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticketId, actionsToken]);
+
+  // The Owner select and the action assignee select share one list (api-spec.md §4.2).
+  useEffect(() => {
+    if (!canRecordActions) return;
     getAssignableUsers()
       .then(setAssignable)
       .catch(() => setAssignable([]));
-  }, [canOperate]);
+  }, [canRecordActions]);
 
   const statusOptions = useMemo(
     () => (ticket ? allowedTransitions(ticket.status) : []),
@@ -507,6 +539,7 @@ export default function StaffTicketDetail() {
             ["comments", `Public Comments (${comments.length})`],
             ["notes", `Internal Notes (${notes.length})`],
             ["attachments", `Attachments (${attachments.length})`],
+            ["actions", `Actions Taken (${actions.length})`],
           ] as [Tab, string][]
         ).map(([value, label]) => (
           <button
@@ -549,6 +582,22 @@ export default function StaffTicketDetail() {
         hidden={tab !== "attachments"}
       >
         <AttachmentSection ticketId={ticket.id} attachments={attachments} onChange={setAttachments} readOnly />
+      </div>
+
+      <div role="tabpanel" id="panel-actions" aria-labelledby="tab-actions" hidden={tab !== "actions"}>
+        <ActionsTaken
+          ticketId={ticket.id}
+          ticketCreatedAt={ticket.createdAt}
+          ownerId={ticket.owner?.id ?? null}
+          locked={ticket.status === "CLOSED" || ticket.status === "CANCELLED"}
+          actions={actions}
+          loadFailed={actionsFailed}
+          onReload={() => setActionsToken((t) => t + 1)}
+          onChange={setActions}
+          readOnly={!canRecordActions}
+          assignable={assignable}
+          currentUser={user ?? undefined}
+        />
       </div>
     </main>
   );

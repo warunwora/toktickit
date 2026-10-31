@@ -80,6 +80,8 @@ export function getStaffTicket(id: number): Promise<StaffTicket> {
 export interface AssignableUser {
   id: number;
   name: string;
+  /** Lab 4 api-spec.md §4.2 — Administrators are assignable too. */
+  role?: RoleName;
 }
 
 export function getAssignableUsers(): Promise<AssignableUser[]> {

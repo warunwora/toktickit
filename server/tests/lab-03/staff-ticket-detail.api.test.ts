@@ -308,7 +308,8 @@ describe("GET /api/staff/assignable-users", () => {
 
     const names = res.body.users.map((user: { name: string }) => user.name);
     expect([...names].sort()).toEqual(names);
-    expect(Object.keys(res.body.users[0]).sort()).toEqual(["id", "name"]);
+    // Lab 4 api-spec.md §4.2 added the role.
+    expect(Object.keys(res.body.users[0]).sort()).toEqual(["id", "name", "role"]);
   });
 
   it("is refused to a Requester", async () => {

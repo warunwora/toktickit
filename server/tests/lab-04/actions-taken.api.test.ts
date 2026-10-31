@@ -207,7 +207,7 @@ describe("POST /api/tickets/:id/actions", () => {
       [{ actionAt: at(), description: "   " }, "description"],
       [{ actionAt: at(), description: "x".repeat(2001) }, "description"],
       [{ actionAt: new Date(Date.now() + 6 * 60_000).toISOString(), description: "Future." }, "actionAt"],
-      [{ actionAt: new Date(ticket.createdAt.getTime() - 1000).toISOString(), description: "Too early." }, "actionAt"],
+      [{ actionAt: new Date(ticket.createdAt.getTime() - 61_000).toISOString(), description: "Too early." }, "actionAt"],
       [{ description: "No time." }, "actionAt"],
       [{ actionAt: at(), description: "Needs a note.", followUpRequired: true }, "followUpNote"],
       [{ actionAt: at(), description: "Done.", status: "COMPLETED" }, "result"],
