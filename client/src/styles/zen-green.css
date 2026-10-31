@@ -1159,7 +1159,7 @@ a:focus-visible {
 
 .zg-badge-action-in-progress {
   background: var(--zg-secondary);
-  color: #ffffff;
+  color: var(--zg-surface);
   border-color: var(--zg-secondary);
 }
 

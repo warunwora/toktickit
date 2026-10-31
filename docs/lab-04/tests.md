@@ -157,6 +157,20 @@ Types: **U** unit · **API** API/integration · **AUTHZ** authorization · **WF*
 | UI-26 | UI | AC-34 | Navigation and landing for each role, active page indicated | correct order, `aria-current` | `StaffDashboard.test.tsx` | Pending |
 | UI-27 | UI | AC-32 | Staff dashboard failure and forbidden | safe messages | `StaffDashboard.test.tsx` | Pending |
 
+### 2.7a Hardening — `client/tests/lab-04/Hardening.test.tsx`
+
+Added in Issue 6: the duplicate-submission and keep-the-values rules checked on the Lab 2 and Lab 3
+forms as well as the new ones (the Actions Taken form is covered by UI-08 … UI-10).
+
+| Test ID | Type | AC | What it tests | Expected result | Automated test file | Final |
+|---|---|---|---|---|---|---|
+| HARD-01 | UI | AC-36 | Create Ticket double click | one request | `Hardening.test.tsx` | Pending |
+| HARD-02 | UI | AC-37 | Create Ticket network failure and 500 | every value kept | `Hardening.test.tsx` | Pending |
+| HARD-03 | UI | AC-36, AC-37 | Comment composer double click, then a failure | one request; text kept | `Hardening.test.tsx` | Pending |
+| HARD-04 | UI | AC-37 | Staff Ticket Detail network failure and 500; a 400 still reverts | selections kept; reverted on 400 | `Hardening.test.tsx` | Pending |
+| HARD-05 | UI | AC-36 | Staff Ticket Detail Save double click | one request, busy label | `Hardening.test.tsx` | Pending |
+| HARD-06 | UI | AC-36, AC-37, AC-28 | User Management opened with `?role=`, create double click, then a failure | filtered; one request; fields kept | `Hardening.test.tsx` | Pending |
+
 ### 2.8 UI style — `client/tests/lab-04/zen-green.lab4.style.test.tsx`
 
 | Test ID | Type | AC | What it tests | Expected result | Automated test file | Final |
@@ -228,10 +242,10 @@ Types: **U** unit · **API** API/integration · **AUTHZ** authorization · **WF*
 | AC-33 | WF-13, WF-14, UI-17 |
 | AC-34 | UI-26, E2E-10 |
 | AC-35 | REG-05, E2E-14 |
-| AC-36 | API-19, UI-10 |
-| AC-37 | UI-09 |
+| AC-36 | API-19, UI-10, HARD-01, HARD-03, HARD-05, HARD-06 |
+| AC-37 | UI-09, HARD-02, HARD-03, HARD-04, HARD-06 |
 | AC-38 | RESP-03 |
-| AC-39 | REG-01, REG-02, REG-03 |
+| AC-39 | REG-01, REG-02, REG-03, [recovery drill](recovery-drill.md) |
 | AC-40 | REG-04 |
 | AC-41 | RESP-01, RESP-02 |
 | AC-42 | STYLE-03, UI-05 |
@@ -240,7 +254,8 @@ Types: **U** unit · **API** API/integration · **AUTHZ** authorization · **WF*
 
 Planned Lab 4 tests: 10 unit, 20 Actions Taken API, 16 workflow, 8 Requester dashboard (incl. 1
 PERF), 10 staff dashboard (incl. 2 PERF), 6 migration/regression, 27 UI component, 4 UI style,
-4 responsive and 14 end-to-end — **119 planned**, on top of the 420 Lab 1–3 tests.
+4 responsive and 14 end-to-end — **119 planned**, on top of the 420 Lab 1–3 tests. Issue 6 added
+6 hardening IDs (HARD-01 … HARD-06, §2.7a), for **125** in all.
 
 ## 4. Responsive, Visual and Accessibility Checklist
 
@@ -262,6 +277,6 @@ Filled in from a real run on `main` in Issue 7.
 ## 7. Known Limitations
 
 - PERF tests are smoke checks on the seeded local database, not load tests.
-- The full `pg_dump` / restore drill is run once and recorded in Issue 6; the automated recovery test
-  uses a throwaway schema.
+- The full `pg_dump` / restore drill was run once and is recorded in
+  [recovery-drill.md](recovery-drill.md); the automated recovery test uses a throwaway schema.
 - Real-time push of another user's change is out of scope; stale updates are detected at save time.

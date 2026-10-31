@@ -36,13 +36,13 @@ export default function StaffDashboard() {
           label="Unassigned"
           value={data?.metrics.unassigned ?? null}
           viewName="unassigned tickets"
-          to={data?.links.unassigned ?? "/staff/queue"}
+          to={data?.links.unassigned ?? ""}
         />
         <MetricCard
           label="Owned by me"
           value={data?.metrics.ownedByMe ?? null}
           viewName="tickets owned by me"
-          to={data?.links.ownedByMe ?? "/staff/queue"}
+          to={data?.links.ownedByMe ?? ""}
         />
         <MetricCard
           label="My open actions"
@@ -54,7 +54,7 @@ export default function StaffDashboard() {
           label="Urgent (active)"
           value={data?.metrics.urgentActive ?? null}
           viewName="urgent active tickets"
-          to={data?.links.urgentActive ?? "/staff/queue"}
+          to={data?.links.urgentActive ?? ""}
         />
       </div>
 

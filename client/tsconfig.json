@@ -8,6 +8,9 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    // Vite bundles the app; tsc only type-checks. Without this, `npm run build`
+    // wrote a .js copy next to every source file (found in Lab 4 Issue 3).
+    "noEmit": true,
     "types": ["node", "vitest/globals", "@testing-library/jest-dom"]
   },
   "include": ["src", "tests"]

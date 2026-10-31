@@ -249,10 +249,11 @@ export default function StaffTicketDetail() {
   }
 
   /**
-   * ui-spec.md §5. A stale save and a blocked resolution keep every selection,
-   * so nothing the person chose is lost while they look; any other refusal puts
-   * the controls back to the stored ticket, so the screen never shows a value
-   * the server refused (Lab 3 ui-spec.md §5.5).
+   * ui-spec.md §5, §6. A stale save, a blocked resolution, a network failure
+   * and a 500 keep every selection, so nothing the person chose is lost
+   * (BR-40, AC-37). Only a 400 — the server refusing the values themselves —
+   * puts the controls back to the stored ticket, so the screen never shows a
+   * value the server refused (Lab 3 ui-spec.md §5.5).
    */
   function handleWriteError(error: unknown, fallback: string) {
     if (error instanceof ApiError && error.code === "STALE_UPDATE") {
@@ -271,7 +272,7 @@ export default function StaffTicketDetail() {
       setSaveError(fallback);
     }
 
-    if (ticket) {
+    if (ticket && error instanceof ApiError && error.status === 400) {
       setOwnerDraft(ticket.owner?.id ?? "");
       setPriorityDraft(ticket.itPriority);
       setStatusDraft(ticket.status);

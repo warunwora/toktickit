@@ -25,25 +25,25 @@ export default function RequesterDashboard() {
           label="Open tickets"
           value={data?.metrics.open ?? null}
           viewName="open tickets"
-          to={data?.links.open ?? "/tickets?statusGroup=active"}
+          to={data?.links.open ?? ""}
         />
         <MetricCard
           label="Waiting for me"
           value={data?.metrics.waitingForMe ?? null}
           viewName="tickets waiting for me"
-          to={data?.links.waitingForMe ?? "/tickets?status=WAITING_FOR_REQUESTER"}
+          to={data?.links.waitingForMe ?? ""}
         />
         <MetricCard
           label="Resolved"
           value={data?.metrics.resolved ?? null}
           viewName="resolved tickets"
-          to={data?.links.resolved ?? "/tickets?status=RESOLVED"}
+          to={data?.links.resolved ?? ""}
         />
         <MetricCard
           label="Closed"
           value={data?.metrics.closed ?? null}
           viewName="closed tickets"
-          to={data?.links.closed ?? "/tickets?status=CLOSED"}
+          to={data?.links.closed ?? ""}
         />
       </div>
 
