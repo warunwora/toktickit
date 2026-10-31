@@ -8,17 +8,20 @@ export class ApiError extends Error {
   status: number;
   code?: string;
   fields?: { field: string; message: string }[];
+  /** The whole error body, for the codes that carry more than a message (Lab 4 api-spec.md §1). */
+  body?: Record<string, unknown>;
 
   constructor(
     status: number,
     message: string,
-    options: { code?: string; fields?: { field: string; message: string }[] } = {}
+    options: { code?: string; fields?: { field: string; message: string }[]; body?: Record<string, unknown> } = {}
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = options.code;
     this.fields = options.fields;
+    this.body = options.body;
   }
 }
 
@@ -38,17 +41,18 @@ async function readError(response: Response, fallback: string): Promise<ApiError
   let message = fallback;
   let code: string | undefined;
   let fields: { field: string; message: string }[] | undefined;
+  let body: Record<string, unknown> | undefined;
 
   try {
-    const body = await response.json();
+    body = await response.json();
     if (typeof body?.error === "string") message = body.error;
     if (typeof body?.code === "string") code = body.code;
-    if (Array.isArray(body?.fields)) fields = body.fields;
+    if (Array.isArray(body?.fields)) fields = body.fields as { field: string; message: string }[];
   } catch {
     // A non-JSON error body is still a failure; keep the generic message.
   }
 
-  return new ApiError(response.status, message, { code, fields });
+  return new ApiError(response.status, message, { code, fields, body });
 }
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {

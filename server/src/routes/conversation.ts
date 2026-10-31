@@ -219,7 +219,9 @@ conversationRouter.post(
         ? await prisma.ticket.findUniqueOrThrow({ where: { id }, select: resolutionSelect })
         : await prisma.ticket.update({
             where: { id },
-            data: { requesterResolvedAt: new Date() },
+            // Lab 4 BR-23 — a ticket write, so a staff screen open on the old
+            // version sees that something changed.
+            data: { requesterResolvedAt: new Date(), version: { increment: 1 } },
             select: resolutionSelect,
           });
 

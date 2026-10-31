@@ -31,6 +31,8 @@ const ticketDetailSelect = {
   itPriority: true,
   resolutionSummary: true,
   requesterResolvedAt: true,
+  // Lab 4 api-spec.md §4.3.
+  version: true,
   requester: { select: { id: true, name: true } },
   owner: { select: { id: true, name: true } },
   category: { select: { id: true, name: true } },

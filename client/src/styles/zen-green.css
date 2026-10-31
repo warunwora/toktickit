@@ -1187,3 +1187,14 @@ a:focus-visible {
     min-height: 44px;
   }
 }
+
+/* ---------- ticket workflow feedback (§5) ---------- */
+
+.zg-blocking-list {
+  padding-left: var(--zg-space-6);
+}
+
+.zg-blocking-list a {
+  color: inherit;
+  font-weight: 600;
+}
