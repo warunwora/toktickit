@@ -134,7 +134,10 @@ describe("PATCH /api/staff/tickets/:id/owner", () => {
     for (const ownerId of [inactiveStaffId, requesterId, 99_999_999]) {
       const res = await patchOwner(id, { ownerId });
       expect(res.status, `ownerId ${ownerId}`).toBe(400);
-      expect(res.body.fields).toEqual([{ field: "ownerId", message: "Select an active IT Staff user" }]);
+      // Lab 4 BR-27 widened the owner to Administrators, so the message names both.
+      expect(res.body.fields).toEqual([
+        { field: "ownerId", message: "Select an active IT Staff or Administrator user" },
+      ]);
     }
 
     const after = await prisma.ticket.findUniqueOrThrow({ where: { id }, select: { ownerId: true } });
@@ -149,10 +152,12 @@ describe("PATCH /api/staff/tickets/:id/owner", () => {
     expect((await patchOwner(99_999_999, { ownerId: staffId })).status).toBe(404);
   });
 
-  it("is refused to an Administrator and to a Requester", async () => {
+  // Lab 4 BR-26 reverses Lab 3 D-10: an Administrator performs IT Staff
+  // behaviour, so only the Requester is still refused.
+  it("is allowed to an Administrator and refused to a Requester", async () => {
     const id = await makeTicket();
 
-    expect((await patchOwner(id, { ownerId: staffId }, adminId)).status).toBe(403);
+    expect((await patchOwner(id, { ownerId: adminId }, adminId)).status).toBe(200);
     expect((await patchOwner(id, { ownerId: staffId }, requesterId)).status).toBe(403);
   });
 });
@@ -279,17 +284,19 @@ describe("PATCH /api/staff/tickets/:id", () => {
     expect(res.body.error).toBe("Nothing to update");
   });
 
-  it("answers 404 for an unknown ticket and 403 for the other two roles", async () => {
+  // Lab 4 BR-26 — the Administrator case changed from 403 to 200.
+  it("answers 404 for an unknown ticket, 200 for an Administrator and 403 for a Requester", async () => {
     const id = await makeTicket();
 
     expect((await patchTicket(99_999_999, { itPriority: "LOW" })).status).toBe(404);
-    expect((await patchTicket(id, { itPriority: "LOW" }, adminId)).status).toBe(403);
+    expect((await patchTicket(id, { itPriority: "LOW" }, adminId)).status).toBe(200);
     expect((await patchTicket(id, { itPriority: "LOW" }, requesterId)).status).toBe(403);
   });
 });
 
 describe("GET /api/staff/assignable-users", () => {
-  it("lists active IT Staff by name and hides everyone else", async () => {
+  // Lab 4 BR-04, BR-27 — Administrators are assignable too.
+  it("lists active IT Staff and Administrators by name and hides everyone else", async () => {
     const res = await request(app).get("/api/staff/assignable-users").set("Cookie", cookie(staffId));
 
     expect(res.status).toBe(200);
@@ -297,7 +304,7 @@ describe("GET /api/staff/assignable-users", () => {
     expect(ids).toContain(staffId);
     expect(ids).not.toContain(inactiveStaffId);
     expect(ids).not.toContain(requesterId);
-    expect(ids).not.toContain(adminId);
+    expect(ids).toContain(adminId);
 
     const names = res.body.users.map((user: { name: string }) => user.name);
     expect([...names].sort()).toEqual(names);

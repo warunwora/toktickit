@@ -8,6 +8,7 @@ import { attachmentsRouter } from "./routes/attachments.js";
 import { conversationRouter } from "./routes/conversation.js";
 import { staffRouter } from "./routes/staff.js";
 import { adminRouter } from "./routes/admin.js";
+import { actionsRouter } from "./routes/actions.js";
 import { requireAuth, requirePasswordChanged } from "./lib/auth.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
@@ -49,5 +50,8 @@ app.use(staffRouter);
 
 // Lab 3 — Administrator user management.
 app.use(adminRouter);
+
+// Lab 4 — Actions Taken.
+app.use(actionsRouter);
 
 export default app;

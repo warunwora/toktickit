@@ -1,11 +1,12 @@
 import bcrypt from "bcryptjs";
 import { getPrisma } from "../src/prisma.js";
-import type { Priority, RoleName, TicketStatus } from "@prisma/client";
+import type { ActionStatus, Priority, RoleName, TicketStatus } from "@prisma/client";
 
 // Lab 1 seeded the four categories. Lab 2 added related systems and the
 // Development Requesters. Lab 3 turns those records into real users with one
 // role each, and adds IT Staff, an Administrator, queue-worthy tickets, Public
-// Comments and Internal Notes (docs/lab-03/specification.md §7.5).
+// Comments and Internal Notes (docs/lab-03/specification.md §7.5). Lab 4 adds
+// Actions Taken (docs/lab-04/specification.md §7.6).
 //
 // Idempotency: every insert is an upsert on a natural unique key, and every
 // ticket, comment and note is looked up by its seed key before it is created,
@@ -201,6 +202,52 @@ const INTERNAL_NOTES: SeedEntry[] = [
   { ticketSummary: "New teaching assistant needs LEB2 access", authorEmail: "warin.cha@kmutt.ac.th", body: "Waiting for the department head to confirm the contract end date before granting access." },
 ];
 
+// Lab 4 §7.6 — Tickets with zero, one and several Actions Taken, every action
+// status, follow-ups open and cleared, and actions assigned to someone other
+// than the Ticket Owner. Thanakrit Meesap is assigned no open action, and
+// Napat Srisai and Suphansa Wongchai have no Ticket Waiting for Requester, so a
+// zero metric can be shown next to a non-zero one. Resolved and Closed Tickets
+// hold only finished work, as the resolution gate requires (BR-19).
+interface SeedAction {
+  ticketSummary: string;
+  /** Minutes after the Ticket was created; equal values show the id tie-break (BR-15). */
+  minutesAfter: number;
+  performedByEmail: string;
+  assigneeEmail: string;
+  description: string;
+  status: ActionStatus;
+  result?: string;
+  followUpNote?: string;
+  followUpClearedByEmail?: string;
+  attachmentNotes?: string;
+  cancelReason?: string;
+}
+
+const ACTIONS: SeedAction[] = [
+  // Several actions, every status, one assigned away from the owner.
+  { ticketSummary: "Outlook freezes when opening large mailboxes", minutesAfter: 20, performedByEmail: "warin.cha@kmutt.ac.th", assigneeEmail: "warin.cha@kmutt.ac.th", description: "Enabled cached mode on the shared mailbox profile.", status: "COMPLETED", result: "Opening time dropped from about a minute to ten seconds.", followUpNote: "Ask the requester next week whether the freeze has returned." },
+  { ticketSummary: "Outlook freezes when opening large mailboxes", minutesAfter: 45, performedByEmail: "warin.cha@kmutt.ac.th", assigneeEmail: "pimchanok.rat@kmutt.ac.th", description: "Archive mailbox items older than three years.", status: "IN_PROGRESS", attachmentNotes: "Mailbox size report is in the internal note." },
+  { ticketSummary: "Outlook freezes when opening large mailboxes", minutesAfter: 45, performedByEmail: "warin.cha@kmutt.ac.th", assigneeEmail: "warin.cha@kmutt.ac.th", description: "Rebuild the Outlook profile on the requester's PC.", status: "CANCELLED", cancelReason: "Cached mode fixed the main delay, so a rebuild is not needed." },
+  { ticketSummary: "Outlook freezes when opening large mailboxes", minutesAfter: 60, performedByEmail: "anong.suk@kmutt.ac.th", assigneeEmail: "warin.cha@kmutt.ac.th", description: "Confirm the mailbox retention policy with the library.", status: "PLANNED" },
+
+  // Exactly one action, assigned to someone other than the owner.
+  { ticketSummary: "Laptop battery drains within two hours", minutesAfter: 30, performedByEmail: "pimchanok.rat@kmutt.ac.th", assigneeEmail: "warin.cha@kmutt.ac.th", description: "Run the vendor battery diagnostic on the laptop.", status: "PLANNED" },
+
+  // A Completed action whose follow-up is still open: blocks resolution.
+  { ticketSummary: "Wi-Fi drops in the lecture room every afternoon", minutesAfter: 90, performedByEmail: "thanakrit.mee@kmutt.ac.th", assigneeEmail: "pimchanok.rat@kmutt.ac.th", description: "Updated the access point firmware in CB2-401.", status: "COMPLETED", result: "Firmware is current; no drop seen during the test hour.", followUpNote: "Check the controller log after three afternoon lectures." },
+
+  // Resolved and Closed Tickets: finished work only, follow-up cleared.
+  { ticketSummary: "Shared library mailbox permissions are missing", minutesAfter: 15, performedByEmail: "thanakrit.mee@kmutt.ac.th", assigneeEmail: "thanakrit.mee@kmutt.ac.th", description: "Re-applied the mailbox delegation for both accounts.", status: "COMPLETED", result: "Both staff members can open the mailbox again.", followUpNote: "Confirm access after the weekend sync.", followUpClearedByEmail: "thanakrit.mee@kmutt.ac.th" },
+  { ticketSummary: "Docking station is not detected", minutesAfter: 25, performedByEmail: "warin.cha@kmutt.ac.th", assigneeEmail: "warin.cha@kmutt.ac.th", description: "Updated the dock firmware.", status: "COMPLETED", result: "Both monitors are detected after a restart.", attachmentNotes: "See the dock photo attached by the requester, if any." },
+
+  // A Reopened Ticket with earlier finished work and new work under way.
+  { ticketSummary: "VPN disconnects after fifteen minutes", minutesAfter: 10, performedByEmail: "pimchanok.rat@kmutt.ac.th", assigneeEmail: "pimchanok.rat@kmutt.ac.th", description: "Raised the VPN idle timeout to eight hours.", status: "COMPLETED", result: "Session stayed up for two hours in testing." },
+  { ticketSummary: "VPN disconnects after fifteen minutes", minutesAfter: 120, performedByEmail: "pimchanok.rat@kmutt.ac.th", assigneeEmail: "pimchanok.rat@kmutt.ac.th", description: "Re-apply the idle timeout lost in the configuration rollback.", status: "IN_PROGRESS" },
+
+  // An Administrator records work like IT Staff (BR-26).
+  { ticketSummary: "Grade submission page times out at the deadline", minutesAfter: 40, performedByEmail: "anong.suk@kmutt.ac.th", assigneeEmail: "anong.suk@kmutt.ac.th", description: "Approved the capacity request INF-2291 with the platform team.", status: "COMPLETED", result: "Two more application servers are scheduled before the next deadline." },
+];
+
 function ticketNumber(year: number, id: number): string {
   return `TKT-${year}-${String(id).padStart(6, "0")}`;
 }
@@ -312,13 +359,55 @@ async function main() {
     createdNotes += 1;
   }
 
+  const ticketCreatedAt = new Map(
+    (await prisma.ticket.findMany({ select: { id: true, createdAt: true } })).map((t) => [t.id, t.createdAt])
+  );
+
+  let createdActions = 0;
+  for (const action of ACTIONS) {
+    const id = ticketId.get(action.ticketSummary);
+    if (!id) continue;
+    const existing = await prisma.actionTaken.findFirst({
+      where: { ticketId: id, description: action.description },
+      select: { id: true },
+    });
+    if (existing) continue;
+
+    // Never in the future and never before the Ticket (BR-05), even on a fresh database.
+    const now = Date.now();
+    const at = new Date(Math.min(ticketCreatedAt.get(id)!.getTime() + action.minutesAfter * 60_000, now));
+    const performedById = userId.get(action.performedByEmail)!;
+    const clearedById = action.followUpClearedByEmail ? userId.get(action.followUpClearedByEmail)! : null;
+
+    await prisma.actionTaken.create({
+      data: {
+        ticketId: id,
+        actionAt: at,
+        description: action.description,
+        result: action.result ?? null,
+        status: action.status,
+        performedById,
+        assigneeId: userId.get(action.assigneeEmail)!,
+        followUpRequired: action.followUpNote !== undefined,
+        followUpNote: action.followUpNote ?? null,
+        followUpClearedAt: clearedById ? new Date(now) : null,
+        followUpClearedById: clearedById,
+        attachmentNotes: action.attachmentNotes ?? null,
+        cancelReason: action.cancelReason ?? null,
+        completedAt: action.status === "COMPLETED" ? at : null,
+        cancelledAt: action.status === "CANCELLED" ? at : null,
+      },
+    });
+    createdActions += 1;
+  }
+
   const activeRequesters = USERS.filter((u) => u.role === "REQUESTER" && u.isActive).length;
   const activeStaff = USERS.filter((u) => u.role === "IT_STAFF" && u.isActive).length;
   console.log(
     `Seeded ${CATEGORY_NAMES.length} categories, ${RELATED_SYSTEM_NAMES.length} related systems, ` +
       `${USERS.length} users (${activeRequesters} active Requesters, ${activeStaff} active IT Staff, ` +
-      `1 Administrator, 2 inactive). Created ${createdTickets} ticket(s), ${createdComments} comment(s) ` +
-      `and ${createdNotes} internal note(s) on this run.`
+      `1 Administrator, 2 inactive). Created ${createdTickets} ticket(s), ${createdComments} comment(s), ` +
+      `${createdNotes} internal note(s) and ${createdActions} action(s) taken on this run.`
   );
 }
 

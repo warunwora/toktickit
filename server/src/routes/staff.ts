@@ -12,8 +12,8 @@ import {
 } from "../lib/transitions.js";
 
 // IT Staff queue and ticket retrieval — docs/lab-03/api-spec.md §6.1, §6.2.
-// Reading is open to IT Staff and Administrators; the write operations that
-// arrive with Issue 6 are IT Staff only (decision D-10).
+// Reading and writing are open to IT Staff and Administrators: Lab 4 BR-26
+// (handout §4.3) replaces the Lab 3 rule that writes were IT Staff only.
 
 export const staffRouter = Router();
 
@@ -132,21 +132,21 @@ staffRouter.get("/api/staff/tickets/:id", staffRead, async (req: Request, res: R
 
 // --- Ticket operations — api-spec.md §6.3-§6.5 ------------------------------
 //
-// Writing the workflow is IT Staff only: an Administrator reads the queue and
-// writes Internal Notes, but does not claim, prioritise or change status
-// (BR-24, decision D-10). That is why these routes use their own gate.
+// Lab 4 BR-26 — Administrators perform IT Staff behaviour: they claim, own,
+// prioritise and change status too. This replaces Lab 3 decision D-10.
 
-const staffWrite = requireRole("IT_STAFF");
+const staffWrite = requireRole("IT_STAFF", "ADMINISTRATOR");
 
 /**
- * The people a ticket may be assigned to (BR-26). The Owner select needs this
+ * The people a ticket or an action may be assigned to: active IT Staff and
+ * Administrators (Lab 4 BR-04, BR-27). The Owner select needs this
  * list and the Administrator user endpoints are closed to IT Staff, so the
  * queue serves its own narrow, non-sensitive projection: id and name only.
  */
 staffRouter.get("/api/staff/assignable-users", staffRead, async (_req: Request, res: Response) => {
   try {
     const users = await getPrisma().user.findMany({
-      where: { role: "IT_STAFF", isActive: true },
+      where: { role: { in: ["IT_STAFF", "ADMINISTRATOR"] }, isActive: true },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     });
@@ -179,7 +179,7 @@ staffRouter.patch("/api/staff/tickets/:id/owner", staffWrite, async (req: Reques
   if (!releasing && (typeof raw !== "number" || !Number.isInteger(raw) || raw <= 0)) {
     res.status(400).json({
       error: "Validation failed",
-      fields: [{ field: "ownerId", message: "Select an active IT Staff user, or release the ticket" }],
+      fields: [{ field: "ownerId", message: "Select an active IT Staff or Administrator user, or release the ticket" }],
     });
     return;
   }
@@ -197,14 +197,14 @@ staffRouter.patch("/api/staff/tickets/:id/owner", staffWrite, async (req: Reques
       // BR-29 / BR-26 — an inactive user, a Requester and an unknown id are one
       // failure to the person assigning: this is not a valid owner.
       const owner = await prisma.user.findFirst({
-        where: { id: raw as number, role: "IT_STAFF", isActive: true },
+        where: { id: raw as number, role: { in: ["IT_STAFF", "ADMINISTRATOR"] }, isActive: true },
         select: { id: true },
       });
 
       if (!owner) {
         res.status(400).json({
           error: "Validation failed",
-          fields: [{ field: "ownerId", message: "Select an active IT Staff user" }],
+          fields: [{ field: "ownerId", message: "Select an active IT Staff or Administrator user" }],
         });
         return;
       }

@@ -4,6 +4,7 @@
 // Lab 2 models follow docs/lab-02/specification.md §7.
 // Lab 3 models follow docs/lab-03/specification.md §7 (Data Changes): the
 // Development Requester becomes a real authenticated User with one role.
+// Lab 4 adds Actions Taken and optimistic versions (docs/lab-04/specification.md §7).
 
 generator client {
   provider = "prisma-client-js"
@@ -69,6 +70,9 @@ model User {
   sessions            Session[]
   publicComments      PublicComment[]
   internalNotes       InternalNote[]
+  performedActions    ActionTaken[]   @relation("ActionPerformer")
+  assignedActions     ActionTaken[]   @relation("ActionAssignee")
+  clearedFollowUps    ActionTaken[]   @relation("ActionFollowUpClearer")
 
   // The Administrator user list filters by one role and sorts by name (BR-57).
   @@index([role, name])
@@ -129,6 +133,8 @@ model Ticket {
   requesterResolvedAt DateTime?
   resolvedAt          DateTime?
   closedAt            DateTime?
+  // Lab 4 — optimistic concurrency (BR-23, BR-24, DB-2).
+  version             Int          @default(1)
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
@@ -139,6 +145,7 @@ model Ticket {
   attachments    Attachment[]
   publicComments PublicComment[]
   internalNotes  InternalNote[]
+  actionsTaken   ActionTaken[]
 
   // My Tickets always filters by requester and sorts by createdAt desc (BR-14, BR-23 of Lab 2).
   @@index([requesterId, createdAt])
@@ -149,6 +156,8 @@ model Ticket {
   @@index([status, createdAt])
   @@index([ownerId, status])
   @@index([itPriority, createdAt])
+  // Lab 4 — "recently updated" on both dashboards (BR-32).
+  @@index([updatedAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -209,4 +218,49 @@ model InternalNote {
   author User   @relation(fields: [authorId], references: [id], onDelete: Restrict)
 
   @@index([ticketId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Actions Taken — Lab 4 (docs/lab-04/specification.md §7, BR-01 … BR-17).
+// A child table, not a JSON array on Ticket (DB-1). Never deleted (BR-14), so
+// the Ticket foreign key is Restrict.
+// ---------------------------------------------------------------------------
+
+enum ActionStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model ActionTaken {
+  id                  Int          @id @default(autoincrement())
+  ticketId            Int
+  actionAt            DateTime
+  description         String
+  result              String?
+  status              ActionStatus @default(PLANNED)
+  performedById       Int
+  assigneeId          Int
+  followUpRequired    Boolean      @default(false)
+  followUpNote        String?
+  followUpClearedAt   DateTime?
+  followUpClearedById Int?
+  attachmentNotes     String?
+  cancelReason        String?
+  completedAt         DateTime?
+  cancelledAt         DateTime?
+  version             Int          @default(1)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  ticket            Ticket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  performedBy       User   @relation("ActionPerformer", fields: [performedById], references: [id], onDelete: Restrict)
+  assignee          User   @relation("ActionAssignee", fields: [assigneeId], references: [id], onDelete: Restrict)
+  followUpClearedBy User?  @relation("ActionFollowUpClearer", fields: [followUpClearedById], references: [id], onDelete: Restrict)
+
+  // One Ticket's list in its stable order, and the resolution gate (BR-15, BR-19).
+  @@index([ticketId, actionAt, id])
+  // "My open actions" on the IT Staff dashboard.
+  @@index([assigneeId, status])
 }
