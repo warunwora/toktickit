@@ -104,9 +104,13 @@ export function MetricCard({ label, value, viewName, to }: MetricProps) {
         <p className="zg-metric-value">{value}</p>
       )}
       {value === 0 ? <p className="zg-muted zg-metric-empty">Nothing here right now</p> : null}
-      <Link className="zg-metric-link" to={to} aria-label={`View ${viewName}`}>
-        View →
-      </Link>
+      {/* Only once the server's link has arrived: a View followed during
+          loading must not open an unfiltered list (BR-36). */}
+      {value === null ? null : (
+        <Link className="zg-metric-link" to={to} aria-label={`View ${viewName}`}>
+          View →
+        </Link>
+      )}
     </section>
   );
 }

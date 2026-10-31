@@ -68,7 +68,10 @@ PostgreSQL.
    ```
 
 Opening the app shows the **login screen**. The Development Requester selector is gone (BR-61): the
-current user is whoever is signed in.
+current user is whoever is signed in. After sign-in each role lands on its **Dashboard** (Lab 4).
+
+`/system-check` is the Lab 1 diagnostic page (API and database round trip). It is linked from no
+screen and needs no sign-in; open it by URL when checking a fresh setup.
 
 ### Local development accounts
 

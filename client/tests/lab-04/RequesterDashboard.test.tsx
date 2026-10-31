@@ -130,6 +130,8 @@ describe("Requester Dashboard", () => {
     expect(screen.getByText("Loading dashboard…")).toBeInTheDocument();
     expect(screen.getByLabelText("Open tickets loading")).toHaveAttribute("aria-busy", "true");
     expect(screen.getByRole("button", { name: "Refresh" })).toBeDisabled();
+    // No View link before the server's drill-down link has arrived.
+    expect(screen.queryByRole("link", { name: "View open tickets" })).not.toBeInTheDocument();
 
     fail(new ApiError(500, "relation \"Ticket\" does not exist"));
     expect(await screen.findByText("The dashboard could not be loaded.")).toBeInTheDocument();
