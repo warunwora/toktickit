@@ -1175,6 +1175,39 @@ a:focus-visible {
   border-color: var(--zg-warning);
 }
 
+/* Tablet: six columns must fit about 740 px of card, so the cells tighten,
+   the date wraps and the row buttons stack (found by RESP-02 at 820 px). */
+@media (min-width: 768px) and (max-width: 991px) {
+  .zg-actions-table th,
+  .zg-actions-table td {
+    padding: var(--zg-space-2) var(--zg-space-2);
+  }
+
+  .zg-actions-table td[data-label="Action Date/Time"] {
+    white-space: normal;
+  }
+
+  .zg-action-description {
+    width: auto;
+  }
+
+  /* Label above value: the description column is too narrow for both side by side. */
+  .zg-action-detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zg-action-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .zg-action-buttons .zg-btn {
+    white-space: normal;
+    padding-left: var(--zg-space-2);
+    padding-right: var(--zg-space-2);
+  }
+}
+
 /* Below 768 px the shared .zg-table rules turn each action into a card; the
    long cells stack instead of sitting beside their label. */
 @media (max-width: 767px) {

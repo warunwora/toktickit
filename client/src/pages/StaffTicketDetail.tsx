@@ -99,6 +99,9 @@ export default function StaffTicketDetail() {
   const [blocking, setBlocking] = useState<BlockingAction[]>([]);
 
   const summaryRef = useRef<HTMLTextAreaElement>(null);
+  // The version this screen's own action writes moved the ticket to, while
+  // the re-read is still in flight; a ticket save waits for it (BR-25).
+  const versionRefresh = useRef<Promise<number | null>>(Promise.resolve(null));
 
   function adopt(loaded: StaffTicket) {
     setTicket(loaded);
@@ -201,7 +204,7 @@ export default function StaffTicketDetail() {
     }
 
     // Each write answers with the next version, which the following write sends.
-    let latest = ticket;
+    let latest = await withOwnVersion(ticket);
 
     try {
       if (ownerChanged) {
@@ -287,7 +290,8 @@ export default function StaffTicketDetail() {
     clearFeedback();
 
     try {
-      const latest = await updateOwner(ticket.id, ticket.version, user.id);
+      const base = await withOwnVersion(ticket);
+      const latest = await updateOwner(ticket.id, base.version, user.id);
       setTicket({ ...ticket, ...latest });
       setOwnerDraft(latest.owner?.id ?? "");
       setSaved(true);
@@ -312,11 +316,23 @@ export default function StaffTicketDetail() {
    */
   function actionsChanged(next: ActionTaken[]) {
     setActions(next);
-    getStaffTicket(ticketId)
-      .then((fresh) =>
-        setTicket((current) => (current ? { ...current, version: fresh.version, updatedAt: fresh.updatedAt } : current))
-      )
-      .catch(() => undefined);
+    versionRefresh.current = getStaffTicket(ticketId)
+      .then((fresh) => {
+        setTicket((current) =>
+          current ? { ...current, version: fresh.version, updatedAt: fresh.updatedAt } : current
+        );
+        return fresh.version;
+      })
+      .catch(() => null);
+  }
+
+  /**
+   * A Save pressed right after an action write must not race the re-read and
+   * report the screen's own change as someone else's, so it waits for it.
+   */
+  async function withOwnVersion(current: StaffTicket): Promise<StaffTicket> {
+    const refreshed = await versionRefresh.current;
+    return refreshed !== null && refreshed > current.version ? { ...current, version: refreshed } : current;
   }
 
   function showAction(actionId: number) {
