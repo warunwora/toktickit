@@ -28,10 +28,11 @@ previous Pull Request had been approved and merged, checked with
 | [#60](https://github.com/warunwora/toktickit/pull/60) | [#53](https://github.com/warunwora/toktickit/issues/53) Role dashboards | `feature/lab4-5-dashboards` | `lab4-staging` | Approved |
 | [#61](https://github.com/warunwora/toktickit/pull/61) | [#54](https://github.com/warunwora/toktickit/issues/54) Final regression and hardening | `feature/lab4-6-hardening` | `lab4-staging` | Approved |
 | [#62](https://github.com/warunwora/toktickit/pull/62) | [#55](https://github.com/warunwora/toktickit/issues/55) End-to-end tests, evidence and final documentation | `feature/lab4-7-e2e-docs` | `lab4-staging` | Approved |
-| release | — Lab 4 release | `release/lab4` | `main` | Under review |
+| [#63](https://github.com/warunwora/toktickit/pull/63) | Lab 4 release | `release/lab4` | `main` | Approved |
 
-Eight Pull Requests, the number the sprint was planned with. The release row is completed once its
-review exists; nothing is recorded here before it has happened.
+Eight Pull Requests, the number the sprint was planned with. The release was approved and merged into
+`main` on 31 Oct. This record is updated by one documentation Pull Request after the release, because
+the release review and my partner's Lab 4 Pull Requests did not exist when the release was opened.
 
 ### Comments I received, and how I responded
 
@@ -80,15 +81,57 @@ My response: "thanks bro" — the run behind "all pass" is recorded in `tests.md
 582 tests, 0 failed, including the 21 new Lab 4 end-to-end and responsive tests that found the
 version race and the tablet overflow fixed in that Pull Request.
 
+**PR #63 — Lab 4 release**
+> **@asamapornch:** lab 4 release looks good, all tests pass. approve
+
+My response: "yay thanks" — the release is `lab4-staging` plus this record; the full run on `main`
+after the merge is the one recorded in `tests.md` §6.
+
 ---
 
 ## 2. Pull Requests I reviewed for my partner
 
 Partner repository: https://github.com/asamapornch/toktickit
 
-At the time of writing my partner had not yet opened a Lab 4 Pull Request (their most recent is
-[#57](https://github.com/asamapornch/toktickit/pull/57), from Sprint 3). Their Lab 4 reviews are
-recorded here when they happen.
+I reviewed all six of my partner's Lab 4 Pull Requests into their `lab4-staging`.
+
+| PR | Title | My verdict |
+|----|-------|------------|
+| [#65](https://github.com/asamapornch/toktickit/pull/65) | Sprint 4 Spec-DD contract suite | Approved |
+| [#66](https://github.com/asamapornch/toktickit/pull/66) | Actions Taken foundation (DB + API) | Approved |
+| [#67](https://github.com/asamapornch/toktickit/pull/67) | Actions Taken UI | Approved |
+| [#68](https://github.com/asamapornch/toktickit/pull/68) | Ticket workflow and resolution gate | Approved |
+| [#69](https://github.com/asamapornch/toktickit/pull/69) | Role dashboards | Approved |
+| [#70](https://github.com/asamapornch/toktickit/pull/70) | Final hardening, accessibility, and Zen Green polish | Changes requested, then approved |
+
+### Comments I gave, and how my partner responded
+
+**PR #65** — "Great job on the Spec-DD contract! Clear, well-structured, and covers all Lab 4
+requirements. Spec looks solid, approved to merge into lab4-staging." Reply: "Thanks for review".
+
+**PR #66** — "DB migration, APIs, and tests look solid. Nice catch cherry-picking the Lab 3 hotfix,
+client tests are all green now (28/28)." Reply: "Thanks ka".
+
+**PR #67** — "Client tests passing (34/34). Smart call on JS validation over HTML5 constraints. Clean
+role separation, Requester view is strictly read-only in the DOM." Reply: "done for issue3, thanks."
+
+**PR #68** — "All tests passing (Server 114/114, Client 37/37). Clean error order logic (checking
+valid transitions before the gate). Good coverage of edge cases, especially handling `CANCELLED`
+actions." Reply: "Thanks for approved to merge into lab4-staging".
+
+**PR #69** — "All server (127/127) and client tests (48/48) passing, including new SD-07 and UI-14
+tests. Proper E2E triage." Reply: "Thanks".
+
+**PR #70** — changes requested on two points:
+1. The requester ticket detail endpoint returned `actionsTaken` with IT's internal description,
+   result, follow-up note and attachment notes.
+2. The resolution gate counted planned actions and updated the status in separate steps, so a
+   concurrent action write could leave a ticket Resolved with an open planned action.
+
+My partner moved the gate check and the status update into one `SELECT … FOR UPDATE` transaction on
+the ticket row. They kept Actions Taken visible to Requesters, citing handout §8.3 ("Requesters will
+see all Actions Taken items"), but removed internal ids and roles from that response. Their results
+were server 137/137, client 55/55 and E2E 15/15, and I approved: "All done".
 
 ---
 

@@ -22,9 +22,10 @@ Several prompts were written in Thai; they are translated here without changing 
 | 2 | A hard approval gate | "Tell me in detail what to do, check and warn me — if my friend hasn't approved, we don't move on." | Every Issue began with `gh pr view <previous> --json state,reviewDecision`; work only started on APPROVED and MERGED. |
 | 3 | One Issue at a time, with instructions | "I mean per Issue — tell me each time." | After every Pull Request: what changed, the reviewer's comment and my reply in short plain English, and exactly which screenshots to take and where they go. |
 | 4 | Keep the naming consistent | "Why isn't the name the same pattern as 'Lab 4 Issue …'?" | PR #57 had been titled like a commit message. It was renamed to its Issue title, and every later Pull Request used the Issue title exactly. |
-| 5 | Additive migration with a way back | (from the plan) "The Lab 4 migration may only add. Write the script that reverses it and prove both directions on Lab 3 data." | `lab4_down.sql`, an automated drill in a throwaway schema (REG-02, REG-03), and a full `pg_dump` / restore drill on a copy of the database, recorded with a fingerprint of every Lab 3 ticket in [recovery-drill.md](recovery-drill.md). |
-| 6 | Every number from SQL | (from the plan) "Each dashboard metric must have its documented SQL, and the test must run that SQL and compare." | `requester-dashboard.api` and `staff-dashboard.api` compare each card with a raw SQL query on the same database; the drill-down links are built by the server and the end-to-end suite clicks each one and compares totals. |
+| 5 | Keep the review record readable | "Keep the comments short on both sides." | One-line review comments and replies on every Pull Request, so the record in [reviewer.md](reviewer.md) stays easy to read. |
+| 6 | Check before release | "Check again, make sure it is right." | A re-check before the release found that the PERF failures came from machine load, not the code. The final run was repeated after the load was stopped. |
 | 7 | Continue | "My friend approved, continue with Issue N." | The gate check, a fresh branch from the merged `lab4-staging`, and the next Issue — never more than one Pull Request open. |
+| 8 | Complete report | "Make the report complete, tell me if you need anything." | The Lab 4 report, checked part by part against §14 of the handout. |
 
 ## What the agent got wrong, and how it was caught
 
@@ -43,7 +44,13 @@ Several prompts were written in Thai; they are translated here without changing 
 
 ## My Reflection
 
-Lab 4 was mostly about changing rules that earlier labs had fixed: Administrators became operators,
+**As a specification agent** it was most useful before any code existed. It turned the handout into
+numbered rules, acceptance criteria and a test plan, and when I asked it to check the plan again it
+found its own first draft was wrong: no action assignee or status, Administrators still read-only
+against handout §4.3, and no recovery or performance tests. Fixing that on paper took minutes; finding
+it after Issue 2 would have cost a Pull Request.
+
+**As a coding agent**, Lab 4 was mostly about changing rules that earlier labs had fixed: Administrators became operators,
 every write gained a version, and the landing screen moved. The useful habit was treating each of
 those as a named change to old tests, listed in the Pull Request, instead of editing tests until they
 were green. That is what kept "every Lab 1–3 test still passes" a meaningful claim.
